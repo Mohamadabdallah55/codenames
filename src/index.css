@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Changa', 'Cairo', system-ui, -apple-system, sans-serif;
+    --font-body: 'Cairo', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  html,
+  body {
+    font-family: var(--font-body);
+    background-color: #161412;
+    color: #F7F3E8;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Tactile Tabletop Card Stock & Surface Utilities */
+.tabletop-felt {
+  background-color: #1A1714;
+  background-image:
+    radial-gradient(circle at 50% 35%, rgba(214, 197, 169, 0.07) 0%, rgba(16, 14, 12, 0.95) 85%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+}
+
+.codenames-card-ivory {
+  background: linear-gradient(180deg, #FBF8F1 0%, #EFE8D8 100%);
+  color: #1C1917;
+  box-shadow:
+    0 4px 0 #C7BCA6,
+    0 6px 14px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.codenames-card-ivory:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 #C7BCA6,
+    0 10px 20px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.codenames-card-ivory:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 #C7BCA6,
+    0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.codenames-card-red {
+  background: linear-gradient(180deg, #DC2626 0%, #991B1B 100%);
+  color: #FFFBEB;
+  box-shadow:
+    0 4px 0 #7F1D1D,
+    0 6px 14px rgba(185, 28, 28, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.codenames-card-blue {
+  background: linear-gradient(180deg, #2563EB 0%, #1E40AF 100%);
+  color: #F8FAFC;
+  box-shadow:
+    0 4px 0 #1E3A8A,
+    0 6px 14px rgba(29, 78, 216, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.codenames-card-neutral {
+  background: linear-gradient(180deg, #D6CBB5 0%, #B8AA91 100%);
+  color: #292524;
+  box-shadow:
+    0 4px 0 #8C7E68,
+    0 5px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.codenames-card-black {
+  background: linear-gradient(180deg, #18181B 0%, #09090B 100%);
+  color: #FAFAFA;
+  box-shadow:
+    0 4px 0 #000000,
+    0 8px 20px rgba(220, 38, 38, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

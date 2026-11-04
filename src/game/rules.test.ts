@@ -188,11 +188,21 @@ test('10. Revealing all cards of a team immediately wins the game (including zer
   assert.equal(imported.entries.length, 2);
 });
 
-test('19 & 20. Dynamic per-game PINs, deterministic seed reproduction, and Invalid Clue Penalty', () => {
-  const round1 = createGameRound({ roomId: 'ELITE-99', roundNumber: 1 });
-  const round2 = createGameRound({ roomId: 'ELITE-99', roundNumber: 2 });
+test('19 & 20. Dynamic per-game PINs, deterministic seed reproduction, and genuine word/color shuffling', () => {
+  const round1 = createGameRound({ roomId: 'ELITE-99', roundNumber: 1, startingTeam: 'red' });
+  const round2 = createGameRound({ roomId: 'ELITE-99', roundNumber: 2, startingTeam: 'red' });
   assert.equal(round1.spymasterPin.length, 4);
   assert.equal(round2.spymasterPin.length, 4);
+
+  // Ensure colors are genuinely shuffled (first 9 cards must NOT all be red)
+  const first9AllRed = round1.cards.slice(0, 9).every((c) => c.secretColor === 'red');
+  assert.equal(first9AllRed, false, 'Secret colors must be shuffled across the 5x5 grid');
+
+  // Ensure words are genuinely shuffled (first 5 words must NOT match the first 5 words of OFFICIAL_WORD_BANK in order)
+  const first5InBankOrder = round1.cards
+    .slice(0, 5)
+    .every((c, idx) => c.wordAr === OFFICIAL_WORD_BANK[idx].ar);
+  assert.equal(first5InBankOrder, false, 'Words must be shuffled from the word bank');
 
   // Reconstructing a board with the same roundSeed produces the exact same 25 words and secret colors (for static QR mode)
   const clone = createGameRound({

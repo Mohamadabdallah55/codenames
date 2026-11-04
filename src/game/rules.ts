@@ -237,7 +237,7 @@ export function shuffleArray<T>(items: readonly T[], rng: () => number = Math.ra
     const j = Math.floor(rng() * (i + 1));
     const tmp = arr[i];
     arr[i] = arr[j];
-    arr[i] = tmp;
+    arr[j] = tmp;
   }
   return arr;
 }

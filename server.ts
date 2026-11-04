@@ -36,10 +36,32 @@ function loadPersistedRooms() {
       const parsed = JSON.parse(raw) as Record<string, ServerGameState>;
       for (const [roomId, state] of Object.entries(parsed)) {
         if (state && state.roomId && Array.isArray(state.cards) && state.cards.length === 25) {
-          if (!state.roundSeed) {
-            state.roundSeed = `${state.roomId}-R${state.roundNumber}-${state.spymasterPin}`;
+          const isUnshuffled = state.cards
+            .slice(0, 9)
+            .every((c) => c.secretColor === state.startingTeam);
+          if (isUnshuffled) {
+            rooms.set(
+              roomId,
+              createGameRound({
+                roomId: state.roomId,
+                roundNumber: state.roundNumber,
+                redTeamCode: state.redTeamCode,
+                redTeamName: state.redTeamName,
+                blueTeamCode: state.blueTeamCode,
+                blueTeamName: state.blueTeamName,
+                customWords: state.customWords,
+                settings: state.settings,
+                matchHistory: state.matchHistory,
+                redWinsCount: state.redWinsCount,
+                blueWinsCount: state.blueWinsCount,
+              })
+            );
+          } else {
+            if (!state.roundSeed) {
+              state.roundSeed = `${state.roomId}-R${state.roundNumber}-${state.spymasterPin}`;
+            }
+            rooms.set(roomId, state);
           }
-          rooms.set(roomId, state);
         }
       }
     }

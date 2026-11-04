@@ -23,7 +23,7 @@ import {
 } from './src/game/rules';
 import { WordEntry, buildValidatedWordBank, parseImportedWordsJson } from './src/data/words';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const DATA_DIR = path.resolve(process.cwd(), '.data');
 const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
 
@@ -626,18 +626,26 @@ async function startServer() {
     }
   }, 1000);
 
-  if (process.env.NODE_ENV !== 'production') {
+  const distPath = path.resolve(process.cwd(), 'dist');
+  const hasBuiltDist = fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.resolve(process.cwd(), 'dist');
+  } else if (hasBuiltDist) {
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
   }
 
   server.listen(PORT, '0.0.0.0', () => {

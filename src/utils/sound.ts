@@ -152,19 +152,33 @@ class SoundController {
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+    // Deep dramatic broadcast pulse + rising harmonic triad (D4 -> A4 -> D5 -> F#5)
+    const bass = ctx.createOscillator();
+    const bassGain = ctx.createGain();
+    bass.type = 'triangle';
+    bass.frequency.setValueAtTime(146.83, now);
+    bass.frequency.exponentialRampToValueAtTime(110, now + 0.45);
+    bassGain.gain.setValueAtTime(0.18, now);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+    bass.connect(bassGain);
+    bassGain.connect(ctx.destination);
+    bass.start(now);
+    bass.stop(now + 0.5);
 
-    gain.gain.setValueAtTime(0.1, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.15);
+    const chimeNotes = [440, 587.33, 880]; // A4 -> D5 -> A5 crisp stage chime
+    chimeNotes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      const startAt = now + idx * 0.085;
+      osc.frequency.setValueAtTime(freq, startAt);
+      gain.gain.setValueAtTime(0.14, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startAt);
+      osc.stop(startAt + 0.38);
+    });
   }
 }
 

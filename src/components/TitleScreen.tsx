@@ -124,9 +124,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         {/* Right Column (RTL Primary): Bespoke SVG Emblem, Title Lockup & Actions */}
         <div className="lg:col-span-7 flex flex-col items-start text-right space-y-6">
           {/* Custom Inline SVG Title Lockup & Geometric Emblem */}
-          <div className="w-full max-w-xl">
+          <div className="w-full max-w-xl" dir="ltr">
             <svg
-              dir="ltr"
+              direction="ltr"
               viewBox="0 0 620 155"
               className="w-full h-auto drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
               role="img"

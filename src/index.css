@@ -93,6 +93,58 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
+@keyframes clueSpotlightIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(20px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes clueStampPop {
+  0% {
+    opacity: 0;
+    transform: scale(1.45) rotate(-8deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.95) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes clueProgressShrink {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+.animate-clue-spotlight {
+  animation: clueSpotlightIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-clue-stamp {
+  animation: clueStampPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.animate-clue-progress {
+  transform-origin: right center;
+  animation: clueProgressShrink 4.2s linear forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

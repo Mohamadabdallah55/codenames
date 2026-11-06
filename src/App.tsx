@@ -19,7 +19,12 @@ import { TitleScreen } from './components/TitleScreen';
 import { GameBoard } from './components/GameBoard';
 import { SpymasterView } from './components/SpymasterView';
 import { RefereeView } from './components/RefereeView';
-import { RoomShareModal, SettingsModal, StatusModal } from './components/Modals';
+import {
+  CinematicClueOverlay,
+  RoomShareModal,
+  SettingsModal,
+  StatusModal,
+} from './components/Modals';
 import { soundFX } from './utils/sound';
 import { RoomActionPayload } from '../server';
 
@@ -110,12 +115,14 @@ export default function App() {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  const [showCinematicClue, setShowCinematicClue] = useState<boolean>(false);
   const [quickClueWord, setQuickClueWord] = useState<string>('');
   const [quickClueCount, setQuickClueCount] = useState<number | 'unlimited'>(2);
   const [actionBannerError, setActionBannerError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const prevLogIdRef = useRef<string | null>(null);
+  const lastClueDeclaredAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -177,6 +184,24 @@ export default function App() {
       }
     }
   }, [gameState.eventLog, gameState.currentTurn, gameState.settings.soundEnabled]);
+
+  // Trigger dramatic full-screen CinematicClueOverlay whenever a new clue is declared
+  useEffect(() => {
+    const declaredAt = gameState.currentClue?.declaredAt ?? null;
+    if (!declaredAt) {
+      lastClueDeclaredAtRef.current = null;
+      setShowCinematicClue(false);
+      return;
+    }
+    if (lastClueDeclaredAtRef.current !== declaredAt) {
+      lastClueDeclaredAtRef.current = declaredAt;
+      setShowCinematicClue(true);
+      const timer = setTimeout(() => {
+        setShowCinematicClue(false);
+      }, 4200);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.currentClue?.declaredAt]);
 
   const fetchRoomStateHttp = useCallback(
     async (targetRoom = roomId, targetRole = role, targetPin = pin) => {
@@ -476,9 +501,9 @@ export default function App() {
   return (
     <main className="w-screen h-screen overflow-hidden tabletop-felt flex flex-col justify-between select-none">
       {/* Unified Top Perimeter HUD Dock */}
-      <div className="shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4 z-20">
+      <div className="shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 sm:gap-3 z-20">
         {/* Right Zone: Red & Blue Team Score Counters */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <div
             data-testid="red-team-hud"
             className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
@@ -548,20 +573,35 @@ export default function App() {
           </div>
 
           {gameState.currentClue ? (
-            <div
+            <button
+              type="button"
               data-testid="current-clue-banner"
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/50 flex items-center gap-2"
+              onClick={() => setShowCinematicClue(true)}
+              title="انقر لإعادة عرض التلميح بحجم سينمائي على الشاشة"
+              className={`px-3.5 py-1.5 rounded-xl border-2 flex items-center gap-2.5 shadow-lg cursor-pointer transition-all hover:scale-[1.02] ${
+                gameState.currentClue.team === 'red'
+                  ? 'bg-gradient-to-r from-red-950/95 via-stone-900 to-red-950/95 border-red-400/80 shadow-[0_0_20px_rgba(220,38,38,0.3)]'
+                  : 'bg-gradient-to-r from-blue-950/95 via-stone-900 to-blue-950/95 border-blue-400/80 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+              }`}
             >
-              <span className="text-xs text-amber-200 font-semibold">التلميح:</span>
-              <span className="text-sm sm:text-base font-extrabold text-white">
+              <span className="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">
+                التلميح:
+              </span>
+              <span className="px-2.5 py-0.5 rounded-lg bg-[#FAF8F2] text-stone-950 text-sm sm:text-lg font-black tracking-tight shadow-sm">
                 {gameState.currentClue.word}
               </span>
-              <span className="px-2 py-0.5 rounded bg-amber-400 text-stone-950 font-mono font-extrabold text-xs sm:text-sm tabular-nums">
+              <span
+                className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs sm:text-base tabular-nums border ${
+                  gameState.currentClue.team === 'red'
+                    ? 'bg-red-600 text-white border-red-300'
+                    : 'bg-blue-600 text-white border-blue-300'
+                }`}
+              >
                 {gameState.currentClue.count === 'unlimited'
                   ? '∞'
                   : gameState.currentClue.count}
               </span>
-              <span className="text-[11px] font-mono text-stone-300 tabular-nums">
+              <span className="text-[11px] font-mono text-amber-200 font-bold tabular-nums hidden sm:inline">
                 (متبقي:{' '}
                 {gameState.currentClue.guessesAllowed === null
                   ? '∞'
@@ -572,7 +612,10 @@ export default function App() {
                     )}
                 )
               </span>
-            </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-bold hidden md:inline">
+                تكبير
+              </span>
+            </button>
           ) : (
             <span
               data-testid="waiting-clue-label"
@@ -847,6 +890,13 @@ export default function App() {
           }
           onToggleFullscreen={toggleFullscreen}
           onClose={() => setShowSettingsModal(false)}
+        />
+      )}
+
+      {showCinematicClue && gameState.currentClue && (
+        <CinematicClueOverlay
+          gameState={gameState}
+          onDismiss={() => setShowCinematicClue(false)}
         />
       )}
 

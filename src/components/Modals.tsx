@@ -727,3 +727,162 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     </div>
   );
 };
+
+interface CinematicClueOverlayProps {
+  gameState: ClientGameState;
+  onDismiss: () => void;
+}
+
+export const CinematicClueOverlay: React.FC<CinematicClueOverlayProps> = ({
+  gameState,
+  onDismiss,
+}) => {
+  const clue = gameState.currentClue;
+  if (!clue) return null;
+
+  const isRed = clue.team === 'red';
+  const teamName = isRed ? gameState.redTeamName : gameState.blueTeamName;
+  const countDisplay = clue.count === 'unlimited' ? '∞' : String(clue.count);
+  const guessesRemaining =
+    clue.guessesAllowed === null
+      ? 'غير محدود (∞)'
+      : `${Math.max(0, clue.guessesAllowed - clue.guessesMade)} محاولات متاحة`;
+
+  return (
+    <div
+      data-testid="cinematic-clue-overlay"
+      onClick={onDismiss}
+      role="dialog"
+      aria-modal="true"
+      aria-label="إعلان التلميح السينمائي"
+      className="fixed inset-0 z-50 bg-stone-950/88 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 cursor-pointer select-none"
+    >
+      {/* Ambient Radial Team Spotlight Glow */}
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none absolute w-[520px] h-[520px] sm:w-[760px] sm:h-[760px] rounded-full blur-3xl opacity-35 ${
+          isRed ? 'bg-red-600' : 'bg-blue-600'
+        }`}
+      />
+
+      <div
+        onClick={(e) => {
+          e.stopPropagation();
+          onDismiss();
+        }}
+        className={`animate-clue-spotlight relative w-full max-w-3xl rounded-3xl border-2 p-6 sm:p-9 shadow-[0_30px_90px_rgba(0,0,0,0.92)] overflow-hidden text-right ${
+          isRed
+            ? 'bg-gradient-to-b from-[#2A1212] via-[#1C1412] to-[#14110F] border-red-500/80'
+            : 'bg-gradient-to-b from-[#101D38] via-[#141824] to-[#121318] border-blue-500/80'
+        }`}
+      >
+        {/* Top Accent Strip */}
+        <div
+          className={`absolute top-0 inset-x-0 h-2 ${
+            isRed
+              ? 'bg-gradient-to-r from-red-700 via-amber-400 to-red-600'
+              : 'bg-gradient-to-r from-blue-700 via-amber-400 to-blue-600'
+          }`}
+        />
+
+        {/* Header: Spymaster Transmission Badge */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <span
+              className={`inline-flex items-center justify-center w-9 h-9 rounded-xl font-extrabold text-xl border ${
+                isRed
+                  ? 'bg-red-600 text-white border-red-300 shadow-[0_0_20px_rgba(220,38,38,0.6)]'
+                  : 'bg-blue-600 text-white border-blue-300 shadow-[0_0_20px_rgba(37,99,235,0.6)]'
+              }`}
+            >
+              {isRed ? '◇' : '○'}
+            </span>
+            <div>
+              <div className="text-xs font-mono uppercase tracking-wider text-amber-300 font-bold">
+                إشارة مشفّرة من قائد الفريق · الدور #{gameState.turnsCount}
+              </div>
+              <div className="text-base sm:text-xl font-black text-white">
+                {teamName}
+              </div>
+            </div>
+          </div>
+
+          <span className="px-3 py-1 rounded-xl bg-stone-900/90 border border-amber-400/30 text-amber-200 text-xs font-mono font-bold">
+            ELITE CLASH · التلميح الرسمي
+          </span>
+        </div>
+
+        {/* Center Stage: Giant Physical Dossier Clue Plate + Monumental Number Stamp */}
+        <div className="codenames-card-ivory rounded-2xl p-5 sm:p-8 border-2 border-[#D5C7AD] flex flex-col sm:flex-row items-center justify-between gap-6 relative">
+          {/* Top Dossier Ring Hole & Label */}
+          <div className="flex-1 text-center sm:text-right w-full">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-mono font-bold text-stone-500 uppercase tracking-widest mb-2">
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-stone-400 bg-stone-200" />
+              <span>الكلمة المفتاحية المعلنة · CLUE WORD</span>
+            </div>
+            <div
+              data-testid="cinematic-clue-word"
+              className="text-4xl sm:text-6xl lg:text-7xl font-black text-stone-950 tracking-tight leading-tight break-words"
+            >
+              {clue.word}
+            </div>
+          </div>
+
+          {/* Number Seal Stamp */}
+          <div
+            className={`animate-clue-stamp shrink-0 w-28 h-28 sm:w-36 sm:h-36 rounded-2xl border-4 flex flex-col items-center justify-center shadow-2xl ${
+              isRed
+                ? 'bg-gradient-to-b from-red-600 to-red-800 border-red-200 text-white'
+                : 'bg-gradient-to-b from-blue-600 to-blue-800 border-blue-200 text-white'
+            }`}
+          >
+            <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider opacity-90">
+              عدد البطاقات
+            </span>
+            <span
+              data-testid="cinematic-clue-count"
+              className="text-5xl sm:text-6xl font-mono font-black tabular-nums leading-none mt-1"
+            >
+              {countDisplay}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer: Guessing Rules & Dismiss Button */}
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+          <div className="flex flex-wrap items-center gap-2 text-stone-200">
+            <span className="px-3 py-1.5 rounded-xl bg-amber-400/15 border border-amber-400/40 text-amber-200 font-extrabold">
+              {guessesRemaining}
+            </span>
+            <span className="text-stone-300 font-semibold">
+              {clue.count === 0
+                ? 'تلميح صفري: تجنّب الكلمات المرتبطة بهذه الكلمة!'
+                : 'ناقش مع فريقك واختر البطاقات المرتبطة بالتلميح'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            data-testid="dismiss-cinematic-clue-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDismiss();
+            }}
+            className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs sm:text-sm cursor-pointer shadow-lg"
+          >
+            بدء التخمين على اللوحة ←
+          </button>
+        </div>
+
+        {/* Auto-dismiss Countdown Progress Strip */}
+        <div className="absolute bottom-0 inset-x-0 h-1.5 bg-stone-900">
+          <div
+            className={`h-full w-full animate-clue-progress ${
+              isRed ? 'bg-red-500' : 'bg-blue-500'
+            }`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

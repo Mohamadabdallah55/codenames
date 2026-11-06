@@ -185,7 +185,7 @@ export default function App() {
     }
   }, [gameState.eventLog, gameState.currentTurn, gameState.settings.soundEnabled]);
 
-  // Trigger dramatic full-screen CinematicClueOverlay whenever a new clue is declared
+  // Trigger dramatic full-screen CinematicClueOverlay on the Projector/Audience screen whenever a new clue is declared
   useEffect(() => {
     const declaredAt = gameState.currentClue?.declaredAt ?? null;
     if (!declaredAt) {
@@ -195,16 +195,36 @@ export default function App() {
     }
     if (lastClueDeclaredAtRef.current !== declaredAt) {
       lastClueDeclaredAtRef.current = declaredAt;
-      setShowCinematicClue(true);
-      const timer = setTimeout(() => {
-        setShowCinematicClue(false);
-      }, 4200);
-      return () => clearTimeout(timer);
+      // Only auto-open the heavy full-screen spotlight on the Audience/Projector screen so Captain/Referee phones never freeze or get blocked
+      if (role === 'audience') {
+        setShowCinematicClue(true);
+        const timer = setTimeout(() => {
+          setShowCinematicClue(false);
+        }, 4200);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [gameState.currentClue?.declaredAt]);
+  }, [gameState.currentClue?.declaredAt, role]);
+
+  const roleRef = useRef<ClientRole>(role);
+  const pinRef = useRef<string | undefined>(pin);
+  useEffect(() => {
+    roleRef.current = role;
+    pinRef.current = pin;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'join',
+          roomId,
+          role,
+          pin,
+        })
+      );
+    }
+  }, [roomId, role, pin]);
 
   const fetchRoomStateHttp = useCallback(
-    async (targetRoom = roomId, targetRole = role, targetPin = pin) => {
+    async (targetRoom = roomId, targetRole = roleRef.current, targetPin = pinRef.current) => {
       try {
         const q = new URLSearchParams({
           role: targetRole,
@@ -221,12 +241,12 @@ export default function App() {
         setGameState(sanitizeStateForRole(localServerStateRef.current, targetRole));
       }
     },
-    [roomId, role, pin]
+    [roomId]
   );
 
-  // Connect WebSocket for instant multi-device synchronization
+  // Connect persistent WebSocket per roomId (never tears down on role/pin switch)
   useEffect(() => {
-    fetchRoomStateHttp(roomId, role, pin);
+    fetchRoomStateHttp(roomId, roleRef.current, pinRef.current);
 
     let isMounted = true;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -246,8 +266,8 @@ export default function App() {
             JSON.stringify({
               type: 'join',
               roomId,
-              role,
-              pin,
+              role: roleRef.current,
+              pin: pinRef.current,
             })
           );
         };
@@ -255,10 +275,23 @@ export default function App() {
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(String(event.data));
-            if (msg.type === 'state_sync' && msg.state) {
+            if (msg.type === 'timer_tick' && typeof msg.timerRemainingSeconds === 'number') {
+              setGameState((prev) =>
+                prev.timerRemainingSeconds === msg.timerRemainingSeconds
+                  ? prev
+                  : { ...prev, timerRemainingSeconds: msg.timerRemainingSeconds }
+              );
+            } else if (msg.type === 'state_sync' && msg.state) {
               setGameState(msg.state);
-              if (msg.state.role && msg.state.role !== role) {
-                setRole(msg.state.role);
+              if (
+                msg.state.spymasterPin &&
+                (roleRef.current === 'spymaster_red' || roleRef.current === 'spymaster_blue')
+              ) {
+                pinRef.current = msg.state.spymasterPin;
+                setPin(msg.state.spymasterPin);
+              }
+              if (msg.authOk === false && msg.state.role === 'audience' && roleRef.current !== 'audience') {
+                setRole('audience');
               }
             } else if (msg.type === 'action_error' && msg.error) {
               setActionBannerError(msg.error);
@@ -288,23 +321,27 @@ export default function App() {
         wsRef.current.close();
       }
     };
-  }, [roomId, role, pin, fetchRoomStateHttp]);
+  }, [roomId, fetchRoomStateHttp]);
 
-  // Execute action on server with automatic static-hosting fallback
+  // Execute action on server with 5s timeout and automatic static-hosting fallback
   const dispatchAction = useCallback(
     async (
       payload: RoomActionPayload
     ): Promise<{ ok: boolean; error?: string; meta?: Record<string, unknown> }> => {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         const res = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             ...payload,
-            role,
-            pin,
+            role: roleRef.current,
+            pin: pinRef.current,
           }),
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
         if (data?.state) {
           setGameState(data.state);

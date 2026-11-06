@@ -21,76 +21,81 @@
 
 /* Tactile Tabletop Card Stock & Surface Utilities */
 .tabletop-felt {
-  background-color: #1A1714;
+  background-color: #14110E;
   background-image:
-    radial-gradient(circle at 50% 35%, rgba(214, 197, 169, 0.07) 0%, rgba(16, 14, 12, 0.95) 85%),
+    radial-gradient(circle at 50% 28%, rgba(234, 179, 8, 0.08) 0%, rgba(16, 13, 10, 0.96) 80%),
     repeating-linear-gradient(
       45deg,
-      rgba(255, 255, 255, 0.012) 0px,
-      rgba(255, 255, 255, 0.012) 2px,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 2px,
       transparent 2px,
       transparent 6px
     );
 }
 
 .codenames-card-ivory {
-  background: linear-gradient(180deg, #FBF8F1 0%, #EFE8D8 100%);
-  color: #1C1917;
+  background: linear-gradient(180deg, #F3EBD9 0%, #E2D5BE 100%);
+  color: #141210;
   box-shadow:
-    0 4px 0 #C7BCA6,
-    0 6px 14px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    0 4px 0 #B8A78A,
+    0 6px 14px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  contain: layout paint;
 }
 
 .codenames-card-ivory:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow:
-    0 6px 0 #C7BCA6,
-    0 10px 20px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 6px 0 #B8A78A,
+    0 12px 22px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 #FFFFFF;
 }
 
 .codenames-card-ivory:active:not(:disabled) {
   transform: translateY(1px);
   box-shadow:
-    0 2px 0 #C7BCA6,
+    0 2px 0 #B8A78A,
     0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
 .codenames-card-red {
-  background: linear-gradient(180deg, #DC2626 0%, #991B1B 100%);
+  background: linear-gradient(180deg, #E11D48 0%, #B91C1C 55%, #881313 100%);
   color: #FFFBEB;
   box-shadow:
-    0 4px 0 #7F1D1D,
-    0 6px 14px rgba(185, 28, 28, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 4px 0 #5C0F0F,
+    0 8px 18px rgba(225, 29, 72, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  contain: layout paint;
 }
 
 .codenames-card-blue {
-  background: linear-gradient(180deg, #2563EB 0%, #1E40AF 100%);
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 55%, #1E3A8A 100%);
   color: #F8FAFC;
   box-shadow:
-    0 4px 0 #1E3A8A,
-    0 6px 14px rgba(29, 78, 216, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 4px 0 #132864,
+    0 8px 18px rgba(37, 99, 235, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  contain: layout paint;
 }
 
 .codenames-card-neutral {
-  background: linear-gradient(180deg, #D6CBB5 0%, #B8AA91 100%);
-  color: #292524;
+  background: linear-gradient(180deg, #CBB99D 0%, #A69274 100%);
+  color: #1F1B17;
   box-shadow:
-    0 4px 0 #8C7E68,
-    0 5px 12px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    0 4px 0 #75654D,
+    0 5px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  contain: layout paint;
 }
 
 .codenames-card-black {
-  background: linear-gradient(180deg, #18181B 0%, #09090B 100%);
+  background: linear-gradient(180deg, #27272A 0%, #09090B 100%);
   color: #FAFAFA;
   box-shadow:
     0 4px 0 #000000,
-    0 8px 20px rgba(220, 38, 38, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 8px 22px rgba(220, 38, 38, 0.5),
+    inset 0 0 0 1.5px rgba(251, 191, 36, 0.45);
+  contain: layout paint;
 }
 
 @keyframes clueSpotlightIn {

@@ -54,7 +54,7 @@ function getSecretBadgeInfo(color: CardColor): {
   }
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({
+export const GameBoard: React.FC<GameBoardProps> = React.memo(({
   cards,
   settings,
   canClickCards,
@@ -251,4 +251,4 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       })}
     </div>
   );
-};
+});

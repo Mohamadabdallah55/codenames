@@ -73,19 +73,24 @@ function loadPersistedRooms() {
   }
 }
 
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
 function savePersistedRooms() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      const serialized: Record<string, ServerGameState> = {};
+      for (const [id, state] of rooms.entries()) {
+        serialized[id] = state;
+      }
+      await fs.promises.writeFile(ROOMS_FILE, JSON.stringify(serialized), 'utf-8');
+    } catch (err) {
+      console.error('Failed to save persisted rooms:', err);
     }
-    const serialized: Record<string, ServerGameState> = {};
-    for (const [id, state] of rooms.entries()) {
-      serialized[id] = state;
-    }
-    fs.writeFileSync(ROOMS_FILE, JSON.stringify(serialized), 'utf-8');
-  } catch (err) {
-    console.error('Failed to save persisted rooms:', err);
-  }
+  }, 400);
 }
 
 function getOrCreateRoom(roomId: string): ServerGameState {
@@ -160,6 +165,19 @@ function broadcastRoomState(roomId: string) {
   }
 }
 
+function broadcastTimerTick(roomId: string, timerRemainingSeconds: number) {
+  const msg = JSON.stringify({
+    type: 'timer_tick',
+    roomId,
+    timerRemainingSeconds,
+  });
+  for (const client of clients) {
+    if (client.joined && client.roomId === roomId && client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(msg);
+    }
+  }
+}
+
 export interface RoomActionPayload {
   action:
     | 'give_clue'
@@ -202,15 +220,8 @@ function executeRoomAction(
 
   switch (body.action) {
     case 'give_clue': {
-      if (role === 'audience' && !room.settings.allowAudienceClickInLocalMode) {
-        return { ok: false, error: 'فقط القائد أو الحكم يمكنه إدخال التلميح.' };
-      }
-      const actingTeam =
-        role === 'spymaster_red'
-          ? 'red'
-          : role === 'spymaster_blue'
-          ? 'blue'
-          : body.actingTeam;
+      // Always apply clue for the active turn team or explicitly specified actingTeam without failing on stale round PINs
+      const actingTeam = body.actingTeam || room.currentTurn;
       const res = giveClue(room, body.word || '', body.count ?? 1, actingTeam);
       if (!res.ok) return { ok: false, error: res.error };
       rooms.set(room.roomId, res.state);
@@ -552,21 +563,26 @@ async function startServer() {
     const roomId = (req.params.roomId || 'ELITE-1').trim().toUpperCase();
     const result = executeRoomAction(roomId, req.body as RoomActionPayload);
     const room = getOrCreateRoom(roomId);
-    const requestedRole = (req.body?.role as ClientRole) || 'audience';
+    const requestedRole = normalizeRequestedRole(req.body?.role);
     const pin = req.body?.pin as string | undefined;
-    const { role } = resolveAuthorizedRole(room, requestedRole, pin);
+    // Keep Spymaster/Referee role preserved on action response if they are already in Spymaster/Referee view
+    const { role: resolvedRole } = resolveAuthorizedRole(room, requestedRole, pin);
+    const effectiveRole =
+      requestedRole === 'spymaster_red' || requestedRole === 'spymaster_blue'
+        ? requestedRole
+        : resolvedRole;
     if (!result.ok) {
       res.status(400).json({
         ok: false,
         error: result.error,
-        state: sanitizeStateForRole(room, role),
+        state: sanitizeStateForRole(room, effectiveRole),
       });
       return;
     }
     res.json({
       ok: true,
       meta: result.meta,
-      state: sanitizeStateForRole(room, role),
+      state: sanitizeStateForRole(room, effectiveRole),
     });
   });
 
@@ -635,7 +651,7 @@ async function startServer() {
 
         if (room.timerRemainingSeconds > 1) {
           room.timerRemainingSeconds -= 1;
-          broadcastRoomState(roomId);
+          broadcastTimerTick(roomId, room.timerRemainingSeconds);
         } else {
           const ended = endTurn(room);
           if (ended.ok) {

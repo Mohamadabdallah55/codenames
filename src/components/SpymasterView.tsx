@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ClientGameState, TeamColor } from '../game/rules';
 import { GameBoard } from './GameBoard';
 
@@ -14,7 +14,21 @@ interface SpymasterViewProps {
   onExitToAudience: () => void;
 }
 
-export const SpymasterView: React.FC<SpymasterViewProps> = ({
+const CLUE_COUNT_OPTIONS: Array<number | 'unlimited'> = [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  0,
+  'unlimited',
+];
+
+export const SpymasterView: React.FC<SpymasterViewProps> = React.memo(({
   gameState,
   spymasterTeam,
   onSwitchSpymasterTeam,
@@ -25,49 +39,116 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
   const [clueWord, setClueWord] = useState('');
   const [clueCount, setClueCount] = useState<number | 'unlimited'>(2);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'key' | 'board'>('key');
+  const [plannedWords, setPlannedWords] = useState<string[]>([]);
 
-  const isMyTeamTurn = gameState.currentTurn === spymasterTeam;
-  const redWordsUnrevealed = gameState.cards.filter(
-    (c) => !c.revealed && c.secretColor === 'red'
-  );
-  const blueWordsUnrevealed = gameState.cards.filter(
-    (c) => !c.revealed && c.secretColor === 'blue'
-  );
-  const blackCard = gameState.cards.find((c) => c.secretColor === 'black');
+  const isRedTurn = gameState.currentTurn === 'red';
+  const activeTeamName = isRedTurn ? gameState.redTeamName : gameState.blueTeamName;
+
+  const { redWordsUnrevealed, blueWordsUnrevealed, blackCard } = useMemo(() => {
+    const red = gameState.cards.filter((c) => !c.revealed && c.secretColor === 'red');
+    const blue = gameState.cards.filter((c) => !c.revealed && c.secretColor === 'blue');
+    const black = gameState.cards.find((c) => c.secretColor === 'black');
+    return {
+      redWordsUnrevealed: red,
+      blueWordsUnrevealed: blue,
+      blackCard: black,
+    };
+  }, [gameState.cards]);
+
+  const togglePlannedWord = (wordAr: string) => {
+    setPlannedWords((prev) => {
+      const exists = prev.includes(wordAr);
+      const next = exists ? prev.filter((w) => w !== wordAr) : [...prev, wordAr];
+      if (next.length >= 1 && next.length <= 9) {
+        setClueCount(next.length);
+      }
+      return next;
+    });
+  };
 
   const handleClueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const trimmed = clueWord.trim();
+    if (!trimmed) {
+      setErrorMsg('يرجى كتابة كلمة التلميح أولًا.');
+      return;
+    }
+
     setSubmitting(true);
-    const res = await onGiveClue(clueWord, clueCount);
-    setSubmitting(false);
-    if (!res.ok) {
-      setErrorMsg(res.error || 'تعذر إرسال التلميح.');
-    } else {
-      setClueWord('');
+    try {
+      const res = await onGiveClue(trimmed, clueCount);
+      if (!res.ok) {
+        setErrorMsg(res.error || 'تعذر إرسال التلميح.');
+      } else {
+        setClueWord('');
+        setPlannedWords([]);
+        setSuccessMsg(`✓ تم إعلان التلميح «${trimmed} — ${clueCount === 'unlimited' ? '∞' : clueCount}» على الشاشة!`);
+        setTimeout(() => setSuccessMsg(null), 3500);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const edgeIndicatorColor =
     gameState.startingTeam === 'red'
-      ? 'bg-red-500 shadow-[0_0_8px_#EF4444]'
-      : 'bg-blue-500 shadow-[0_0_8px_#3B82F6]';
+      ? 'bg-red-500 shadow-[0_0_10px_#EF4444]'
+      : 'bg-blue-500 shadow-[0_0_10px_#3B82F6]';
 
   return (
     <div
       data-testid="spymaster-view"
-      className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-y-auto lg:overflow-hidden p-2 sm:p-4"
+      className="w-full h-full flex flex-col lg:flex-row gap-3 lg:gap-4 overflow-y-auto lg:overflow-hidden p-2 sm:p-4"
     >
-      {/* Right Column: Authentic Codenames Spymaster Key Card & Quick Lists */}
-      <aside className="w-full lg:w-92 shrink-0 flex flex-col gap-3 bg-stone-900/95 border border-amber-200/20 rounded-2xl p-4 overflow-y-auto">
+      {/* Mobile View Mode Switcher (reduces DOM load & keyboard lag on phones) */}
+      <div className="flex lg:hidden grid-cols-2 gap-2 shrink-0 bg-stone-950/90 p-1.5 rounded-xl border border-stone-800">
+        <button
+          type="button"
+          onClick={() => setMobileTab('key')}
+          className={`flex-1 py-2 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+            mobileTab === 'key'
+              ? 'bg-amber-500 text-stone-950 shadow'
+              : 'text-stone-300 hover:bg-stone-900'
+          }`}
+        >
+          إعلان التلميح والمفتاح السري
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('board')}
+          className={`flex-1 py-2 rounded-lg text-xs font-extrabold cursor-pointer transition-colors ${
+            mobileTab === 'board'
+              ? 'bg-amber-500 text-stone-950 shadow'
+              : 'text-stone-300 hover:bg-stone-900'
+          }`}
+        >
+          لوحة الـ 25 كلمة كاملة
+        </button>
+      </div>
+
+      {/* Right Column: Fast Clue Composer + Authentic Codenames Spymaster Key Card */}
+      <aside
+        className={`w-full lg:w-[400px] shrink-0 flex-col gap-3 bg-stone-900/95 border border-amber-200/20 rounded-2xl p-3.5 sm:p-4 overflow-y-auto ${
+          mobileTab === 'board' ? 'hidden lg:flex' : 'flex'
+        }`}
+      >
+        {/* Header Bar */}
         <div className="flex items-center justify-between border-b border-stone-800 pb-2.5">
           <div>
-            <h2 className="text-base font-extrabold text-amber-200">
-              بطاقة المفتاح السري للقائد
+            <h2 className="text-sm sm:text-base font-extrabold text-amber-200">
+              لوحة القائد والمفتاح السري
             </h2>
-            <p className="text-xs text-stone-400 font-mono">
-              رمز الجولة الحالي: <span className="text-amber-300 font-bold">{gameState.spymasterPin || '----'}</span>
+            <p className="text-[11px] text-stone-400 font-mono">
+              رمز الجولة الحالي:{' '}
+              <span className="text-amber-300 font-bold">
+                {gameState.spymasterPin || '----'}
+              </span>
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -93,9 +174,9 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
           <button
             type="button"
             onClick={() => onSwitchSpymasterTeam('red')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs border transition-colors cursor-pointer ${
+            className={`py-2 px-3 rounded-xl font-extrabold text-xs border transition-colors cursor-pointer ${
               spymasterTeam === 'red'
-                ? 'bg-red-700 text-white border-red-400'
+                ? 'bg-gradient-to-r from-red-700 to-red-600 text-white border-red-300 shadow-md'
                 : 'bg-stone-800 text-stone-400 border-stone-700'
             }`}
           >
@@ -104,9 +185,9 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
           <button
             type="button"
             onClick={() => onSwitchSpymasterTeam('blue')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs border transition-colors cursor-pointer ${
+            className={`py-2 px-3 rounded-xl font-extrabold text-xs border transition-colors cursor-pointer ${
               spymasterTeam === 'blue'
-                ? 'bg-blue-700 text-white border-blue-400'
+                ? 'bg-gradient-to-r from-blue-700 to-blue-600 text-white border-blue-300 shadow-md'
                 : 'bg-stone-800 text-stone-400 border-stone-700'
             }`}
           >
@@ -114,10 +195,123 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
           </button>
         </div>
 
-        {/* Authentic Codenames Physical Key-Card Frame (Matches attached 43333.jpg & 444444.jpg) */}
+        {/* TOP-PRIORITY: Instant Zero-Lag Clue Composer */}
+        <form
+          onSubmit={handleClueSubmit}
+          className={`p-3.5 rounded-2xl border-2 space-y-3 shadow-lg ${
+            isRedTurn
+              ? 'bg-gradient-to-b from-red-950/60 to-stone-950 border-red-500/60'
+              : 'bg-gradient-to-b from-blue-950/60 to-stone-950 border-blue-500/60'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-extrabold text-white flex items-center gap-1.5">
+              <span
+                className={`inline-block w-2.5 h-2.5 rounded-full ${
+                  isRedTurn ? 'bg-red-500' : 'bg-blue-500'
+                }`}
+              />
+              <span>إرسال تلميح الدور ({activeTeamName})</span>
+            </span>
+            {gameState.currentClue && (
+              <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-200 font-mono font-bold">
+                الحالي: {gameState.currentClue.word} ({gameState.currentClue.count === 'unlimited' ? '∞' : gameState.currentClue.count})
+              </span>
+            )}
+          </div>
+
+          {/* Clue Word Input */}
+          <div>
+            <input
+              type="text"
+              dir="rtl"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              value={clueWord}
+              onChange={(e) => {
+                setClueWord(e.target.value);
+                if (errorMsg) setErrorMsg(null);
+              }}
+              placeholder="اكتب كلمة التلميح الواحدة هنا..."
+              aria-label="كلمة التلميح"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900 border-2 border-stone-700 focus:border-amber-400 text-base font-extrabold text-white placeholder:text-stone-500 focus:outline-none"
+            />
+          </div>
+
+          {/* 1-Tap Tactile Number Selector Bar (Replaces clunky mobile select dropdown) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] text-stone-300 font-bold">
+              <span>اختر عدد الكلمات المرتبطة بالتلميح:</span>
+              <span className="font-mono text-amber-300">
+                الرقم المختار: {clueCount === 'unlimited' ? '∞ (غير محدود)' : clueCount}
+              </span>
+            </div>
+            <div
+              role="group"
+              aria-label="عدد كلمات التلميح"
+              className="grid grid-cols-6 sm:grid-cols-11 gap-1"
+            >
+              {CLUE_COUNT_OPTIONS.map((opt) => {
+                const active = clueCount === opt;
+                const label = opt === 'unlimited' ? '∞' : String(opt);
+                return (
+                  <button
+                    key={String(opt)}
+                    type="button"
+                    onClick={() => setClueCount(opt)}
+                    className={`py-2 rounded-lg font-mono font-black text-xs sm:text-sm cursor-pointer border transition-all ${
+                      active
+                        ? 'bg-amber-400 text-stone-950 border-amber-200 shadow scale-105'
+                        : 'bg-stone-900 text-stone-300 border-stone-700 hover:bg-stone-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div
+              role="alert"
+              className="p-2 rounded-lg bg-red-950/90 border border-red-400 text-xs text-red-200 font-bold"
+            >
+              {errorMsg}
+            </div>
+          )}
+
+          {successMsg && (
+            <div
+              role="status"
+              className="p-2 rounded-lg bg-emerald-950/90 border border-emerald-400 text-xs text-emerald-200 font-bold"
+            >
+              {successMsg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting || gameState.status !== 'playing'}
+            className={`w-full py-3 rounded-xl font-extrabold text-xs sm:text-sm cursor-pointer transition-all shadow-lg disabled:opacity-40 ${
+              isRedTurn
+                ? 'bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-stone-950 hover:brightness-110'
+                : 'bg-gradient-to-r from-blue-500 via-amber-400 to-blue-500 text-stone-950 hover:brightness-110'
+            }`}
+          >
+            {submitting
+              ? 'جارٍ الإرسال الفوري...'
+              : `إعلان التلميح على الشاشة الرئيسية (${clueWord.trim() || '...'} — ${
+                  clueCount === 'unlimited' ? '∞' : clueCount
+                })`}
+          </button>
+        </form>
+
+        {/* Authentic Codenames Physical Key-Card Frame */}
         <div className="flex flex-col items-center">
-          <div className="relative p-4 rounded-2xl bg-[#4A3B31] border-4 border-[#635144] shadow-2xl w-full max-w-[260px]">
-            {/* 4-Edge Starting Team Indicator Lights (Top, Bottom, Left, Right) */}
+          <div className="relative p-3.5 rounded-2xl bg-[#4A3B31] border-4 border-[#6B5647] shadow-2xl w-full max-w-[265px]">
+            {/* 4-Edge Starting Team Indicator Lights */}
             <div
               className={`w-10 h-1.5 rounded-full mx-auto mb-2 ${edgeIndicatorColor}`}
               title={`الفريق البادئ: ${gameState.startingTeam === 'red' ? 'الأحمر' : 'الأزرق'}`}
@@ -131,36 +325,41 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
 
             <div
               data-testid="spymaster-key-matrix"
-              className="grid grid-cols-5 gap-1.5 aspect-square w-full bg-[#1C1917] p-2.5 rounded-xl border-2 border-stone-950"
+              className="grid grid-cols-5 gap-1.5 aspect-square w-full bg-[#181512] p-2 rounded-xl border-2 border-stone-950"
             >
               {gameState.cards.map((card) => {
                 const c = card.secretColor;
                 const tileClass =
                   c === 'red'
-                    ? 'bg-[#D92D20] border-[#F97066] text-red-200'
+                    ? 'bg-gradient-to-b from-[#F43F5E] to-[#BE123C] border-[#FDA4AF] text-white'
                     : c === 'blue'
-                    ? 'bg-[#1570EF] border-[#53B1FD] text-blue-200'
+                    ? 'bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] border-[#93C5FD] text-white'
                     : c === 'black'
-                    ? 'bg-[#141414] border-stone-600 text-stone-200'
-                    : 'bg-[#D8C7A6] border-[#E7DAC1] text-stone-700';
+                    ? 'bg-[#09090B] border-amber-400/80 text-amber-300'
+                    : 'bg-[#D8C7A6] border-[#EDE2CC] text-stone-800';
 
                 return (
                   <div
                     key={card.index}
-                    className={`rounded-md border flex items-center justify-center text-xs font-mono font-extrabold relative select-none ${tileClass} ${
-                      card.revealed ? 'opacity-25 scale-95' : 'opacity-100'
+                    className={`rounded-md border flex flex-col items-center justify-center p-0.5 text-[10px] font-extrabold relative select-none leading-tight ${tileClass} ${
+                      card.revealed ? 'opacity-20 scale-90' : 'opacity-100'
                     }`}
                     title={`${card.wordAr} (${c})`}
                   >
-                    {card.revealed
-                      ? '✓'
-                      : c === 'red'
-                      ? '◇'
-                      : c === 'blue'
-                      ? '○'
-                      : c === 'black'
-                      ? '✕'
-                      : ''}
+                    <span>
+                      {card.revealed
+                        ? '✓'
+                        : c === 'red'
+                        ? '◇'
+                        : c === 'blue'
+                        ? '○'
+                        : c === 'black'
+                        ? '✕'
+                        : ''}
+                    </span>
+                    <span className="text-[8px] font-bold truncate max-w-full opacity-95">
+                      {card.wordAr}
+                    </span>
                   </div>
                 );
               })}
@@ -171,102 +370,88 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
             />
           </div>
           {/* Translucent Plastic Key Card Stand Base */}
-          <div className="w-32 h-3 bg-white/15 border border-white/25 rounded-b-xl backdrop-blur-xs -mt-0.5 shadow-md" />
+          <div className="w-32 h-3 bg-white/15 border border-white/25 rounded-b-xl -mt-0.5 shadow-md" />
         </div>
 
-        {/* Clue Submission Form for Active Spymaster */}
-        <form
-          onSubmit={handleClueSubmit}
-          className="p-3 rounded-xl bg-stone-950/90 border border-amber-200/15 space-y-2.5"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-amber-200">
-              إعلان التلميح (
-              {gameState.currentTurn === 'red'
-                ? gameState.redTeamName
-                : gameState.blueTeamName}
-              )
-            </span>
-            {!isMyTeamTurn && (
-              <span className="text-[11px] text-stone-400">بانتظار دور فريقك</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={clueWord}
-              onChange={(e) => setClueWord(e.target.value)}
-              placeholder="كلمة التلميح الواحدة..."
-              aria-label="كلمة التلميح"
-              className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-sm text-white focus:outline-none focus:border-amber-400"
-            />
-            <select
-              value={String(clueCount)}
-              onChange={(e) =>
-                setClueCount(
-                  e.target.value === 'unlimited' ? 'unlimited' : Number(e.target.value)
-                )
-              }
-              aria-label="عدد كلمات التلميح"
-              className="w-20 px-2 py-2 rounded-lg bg-stone-900 border border-stone-700 text-sm font-mono font-bold text-amber-300 focus:outline-none"
-            >
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="0">0</option>
-              <option value="unlimited">∞</option>
-            </select>
-          </div>
-
-          {errorMsg && <p className="text-xs text-red-400 font-semibold">{errorMsg}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting || !isMyTeamTurn || gameState.status !== 'playing'}
-            className="w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-stone-950 font-extrabold text-xs cursor-pointer transition-colors"
-          >
-            {submitting ? 'جارٍ الإعلان...' : 'إعلان التلميح على الشاشة الرئيسية'}
-          </button>
-        </form>
-
-        {/* Unrevealed Words Quick Summary by Color */}
+        {/* Interactive Unrevealed Words Helper (Tap words to plan your clue count!) */}
         <div className="space-y-2 text-xs">
-          <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-500/30">
-            <div className="font-bold text-red-300 mb-1">
-              ◇ كلمات الأحمر المتبقية ({redWordsUnrevealed.length}):
+          <div className="p-2.5 rounded-xl bg-red-950/45 border border-red-500/35">
+            <div className="flex items-center justify-between font-bold text-red-300 mb-1.5">
+              <span>◇ كلمات الأحمر المتبقية ({redWordsUnrevealed.length}):</span>
+              <span className="text-[10px] text-stone-400">انقر لتحديد كلمات التلميح</span>
             </div>
-            <div className="text-stone-200 leading-relaxed">
-              {redWordsUnrevealed.map((c) => c.wordAr).join(' · ') || 'تم كشفها جميعًا'}
+            <div className="flex flex-wrap gap-1.5">
+              {redWordsUnrevealed.map((c) => {
+                const selected = plannedWords.includes(c.wordAr);
+                return (
+                  <button
+                    key={c.index}
+                    type="button"
+                    onClick={() => togglePlannedWord(c.wordAr)}
+                    className={`px-2 py-1 rounded-lg font-bold text-xs cursor-pointer border transition-all ${
+                      selected
+                        ? 'bg-red-600 text-white border-amber-300 shadow scale-105'
+                        : 'bg-red-950/80 text-red-100 border-red-800/60 hover:bg-red-900/60'
+                    }`}
+                  >
+                    {c.wordAr}
+                  </button>
+                );
+              })}
+              {redWordsUnrevealed.length === 0 && (
+                <span className="text-stone-400">تم كشفها جميعًا</span>
+              )}
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-blue-950/40 border border-blue-500/30">
-            <div className="font-bold text-blue-300 mb-1">
-              ○ كلمات الأزرق المتبقية ({blueWordsUnrevealed.length}):
+          <div className="p-2.5 rounded-xl bg-blue-950/45 border border-blue-500/35">
+            <div className="flex items-center justify-between font-bold text-blue-300 mb-1.5">
+              <span>○ كلمات الأزرق المتبقية ({blueWordsUnrevealed.length}):</span>
+              <span className="text-[10px] text-stone-400">انقر لتحديد كلمات التلميح</span>
             </div>
-            <div className="text-stone-200 leading-relaxed">
-              {blueWordsUnrevealed.map((c) => c.wordAr).join(' · ') || 'تم كشفها جميعًا'}
+            <div className="flex flex-wrap gap-1.5">
+              {blueWordsUnrevealed.map((c) => {
+                const selected = plannedWords.includes(c.wordAr);
+                return (
+                  <button
+                    key={c.index}
+                    type="button"
+                    onClick={() => togglePlannedWord(c.wordAr)}
+                    className={`px-2 py-1 rounded-lg font-bold text-xs cursor-pointer border transition-all ${
+                      selected
+                        ? 'bg-blue-600 text-white border-amber-300 shadow scale-105'
+                        : 'bg-blue-950/80 text-blue-100 border-blue-800/60 hover:bg-blue-900/60'
+                    }`}
+                  >
+                    {c.wordAr}
+                  </button>
+                );
+              })}
+              {blueWordsUnrevealed.length === 0 && (
+                <span className="text-stone-400">تم كشفها جميعًا</span>
+              )}
             </div>
           </div>
 
           {blackCard && (
-            <div className="p-2.5 rounded-xl bg-stone-950 border border-amber-400/40 flex items-center justify-between">
-              <span className="text-amber-300 font-bold">✕ البطاقة السوداء:</span>
-              <span className="font-extrabold text-white text-sm">{blackCard.wordAr}</span>
+            <div className="p-2.5 rounded-xl bg-stone-950 border-2 border-red-500/60 flex items-center justify-between">
+              <span className="text-amber-300 font-extrabold text-xs">
+                ✕ البطاقة السوداء (تجنّبها تمامًا):
+              </span>
+              <span className="px-2.5 py-0.5 rounded-lg bg-red-600/25 border border-red-400/50 font-black text-white text-sm">
+                {blackCard.wordAr}
+              </span>
             </div>
           )}
         </div>
       </aside>
 
       {/* Left Main Area: Synchronized 5x5 Secret Key Board */}
-      <div className="flex-1 min-h-[420px] flex flex-col">
+      <div
+        className={`flex-1 min-h-[420px] flex-col ${
+          mobileTab === 'key' ? 'hidden lg:flex' : 'flex'
+        }`}
+      >
         <GameBoard
           cards={gameState.cards}
           settings={gameState.settings}
@@ -277,4 +462,4 @@ export const SpymasterView: React.FC<SpymasterViewProps> = ({
       </div>
     </div>
   );
-};
+});

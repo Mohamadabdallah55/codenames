@@ -1,0 +1,515 @@
+.referee-workspace {
+  --ref-bg: #100f13;
+  --ref-panel: #19181e;
+  --ref-raised: #242229;
+  --ref-line: #39343c;
+  --ref-text: #f6f2ed;
+  --ref-muted: #bab2be;
+  --ref-gold: #f0c679;
+  --ref-focus: #ffe1a4;
+  display: grid;
+  grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
+  gap: 10px;
+  block-size: 100%;
+  min-block-size: 0;
+  padding: max(9px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  color: var(--ref-text);
+  background: radial-gradient(ellipse at 88% 0%, #272027 0, transparent 55%), var(--ref-bg);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+.referee-workspace :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--ref-focus);
+  outline-offset: -2px;
+}
+
+.referee-shell,
+.referee-sidebar,
+.referee-panel,
+.referee-board {
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.referee-header,
+.referee-identity,
+.referee-header-actions,
+.referee-tabs,
+.referee-match-heading,
+.referee-match-meta,
+.referee-score,
+.referee-turn,
+.referee-board-heading,
+.referee-board-tools,
+.referee-board-footer,
+.referee-connection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.referee-header,
+.referee-match-heading,
+.referee-score,
+.referee-turn,
+.referee-board-heading,
+.referee-board-footer {
+  justify-content: space-between;
+}
+
+.referee-header {
+  min-height: 52px;
+  padding-block: 2px 8px;
+}
+
+.referee-identity { gap: 9px; }
+.referee-identity-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 38px;
+  block-size: 38px;
+  flex: none;
+  color: var(--ref-gold);
+  background: #342b23;
+  border: 1px solid #665036;
+  border-radius: 12px;
+}
+
+.referee-identity-icon svg { inline-size: 21px; block-size: 21px; }
+.referee-brand {
+  display: block;
+  color: var(--ref-gold);
+  font: 600 .65rem/1.3 var(--font-mono);
+  letter-spacing: .09em;
+  white-space: nowrap;
+}
+
+.referee-header h1,
+.referee-match h2,
+.referee-board h2 {
+  font: 800 1.17rem/1.3 var(--font-display);
+  margin: 0;
+}
+
+.referee-button,
+.referee-icon-button,
+.referee-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding: 7px 10px;
+  border: 1px solid var(--ref-line);
+  border-radius: 11px;
+  background: var(--ref-raised);
+  color: var(--ref-text);
+  font-weight: 750;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.referee-button svg,
+.referee-icon-button svg,
+.referee-tabs svg,
+.referee-group summary svg,
+.referee-connection svg {
+  inline-size: 17px;
+  block-size: 17px;
+  flex: none;
+}
+
+.referee-button:hover:not(:disabled),
+.referee-icon-button:hover:not(:disabled) {
+  background: #302d35;
+  border-color: #6a5f70;
+}
+
+.referee-button:disabled {
+  color: #9b929f;
+  background: #1b1a20;
+  border-color: #302c35;
+  cursor: not-allowed;
+}
+
+.referee-icon-button { inline-size: 44px; padding: 0; flex: none; }
+.referee-button-gold {
+  color: #251a0a;
+  background: var(--ref-gold);
+  border-color: #f9d69b;
+  font-weight: 850;
+}
+
+.referee-button-gold:hover:not(:disabled) { background: #ffda94; border-color: #ffe1ad; }
+.referee-button-danger { color: #ffb4b8; border-color: #72434d; }
+.referee-header-actions { gap: 5px; }
+.referee-audience-button { white-space: nowrap; color: var(--ref-gold); font-size: .76rem; }
+
+.referee-tabs {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #7a674f #16151a;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--ref-line);
+  border-radius: 13px;
+  background: #151419;
+}
+
+.referee-tabs button {
+  flex: 1 0 auto;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ref-muted);
+  white-space: nowrap;
+  padding-inline: 10px;
+}
+
+.referee-tabs button:hover { color: var(--ref-text); background: #242128; }
+.referee-tabs button[aria-current] {
+  color: var(--ref-gold);
+  border-color: #6e5636;
+  background: #362b20;
+}
+
+.referee-sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ref-line);
+  border-radius: 16px;
+  background: var(--ref-panel);
+  overflow: hidden;
+  box-shadow: 0 12px 32px #08070b45;
+}
+
+.referee-panel {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #605565 transparent;
+  padding: 9px;
+}
+
+.referee-controls {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+}
+
+.referee-match {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid #574635;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #28212a, #1b191f 72%);
+}
+
+.referee-caption { color: var(--ref-muted); font-size: .73rem; }
+.referee-match-heading { align-items: flex-start; }
+.referee-match-meta { align-items: flex-end; flex-direction: column; gap: 3px; }
+.referee-status,
+.referee-timer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: .75rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.referee-status {
+  padding: 5px 8px;
+  border: 1px solid #745337;
+  border-radius: 8px;
+  background: #362a22;
+  color: var(--ref-gold);
+}
+
+button.referee-status { min-height: 44px; cursor: pointer; }
+.referee-status[data-status="playing"] {
+  background: #17352b;
+  border-color: #34634f;
+  color: #a6efd0;
+}
+.referee-timer { color: var(--ref-gold); }
+.referee-timer [dir="ltr"] { font: 700 .91rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.referee-timer[data-urgent="true"] { color: #ff9ca3; }
+
+.referee-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.referee-score {
+  --team-fg: #ffa5b2;
+  --team-bg: #382028;
+  --team-border: #733c4b;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  color: var(--team-fg);
+  border: 1px solid var(--team-border);
+  background: var(--team-bg);
+  border-radius: 11px;
+}
+
+.referee-score[data-team="blue"] { --team-fg: #a9ccff; --team-bg: #202b44; --team-border: #3e5781; }
+.referee-score[data-team="coop"] { --team-fg: #f6d195; --team-bg: #372d22; --team-border: #685238; }
+.referee-score[data-turn="true"] { border-color: var(--team-fg); }
+.referee-score > div:first-child { min-inline-size: 0; }
+.referee-team-label { font-size: .68rem; }
+.referee-score strong { display: block; color: var(--ref-text); line-height: 1.35; overflow-wrap: anywhere; }
+.referee-score-count { display: grid; justify-items: center; flex: none; line-height: 1.12; }
+.referee-score-count b { font: 700 1.64rem/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.referee-score-count span { font-size: .65rem; text-align: center; max-width: 5ch; }
+.referee-turn { color: var(--ref-gold); font-size: .79rem; }
+.referee-turn > span:first-child { overflow-wrap: anywhere; }
+.referee-turn b, .referee-board-footer b { color: var(--ref-muted); margin-inline-end: 3px; }
+.referee-turn > span:last-child { flex: none; }
+
+.referee-current-clue,
+.referee-clue-empty {
+  border: 1px solid var(--ref-line);
+  border-radius: 10px;
+  background: #141318;
+  padding: 7px 9px;
+}
+
+.referee-current-clue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 7px;
+  align-items: center;
+  text-align: start;
+  color: var(--ref-muted);
+  min-height: 44px;
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.referee-current-clue:hover { border-color: #7b644a; }
+.referee-current-clue strong { display: block; color: var(--ref-text); font-size: 1rem; overflow-wrap: anywhere; }
+.referee-current-clue b,
+.referee-current-clue svg { color: var(--ref-gold); }
+.referee-clue-count { margin-inline-start: 3px; }
+.referee-clue-empty { margin: 0; color: var(--ref-muted); font-size: .78rem; }
+
+.referee-group {
+  background: #1e1c23;
+  border: 1px solid var(--ref-line);
+  border-radius: 12px;
+}
+
+.referee-group summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  padding: 9px 11px;
+  min-height: 46px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.referee-group summary::-webkit-details-marker { display: none; }
+.referee-group summary span { flex: 1; }
+.referee-group summary svg:first-child { color: var(--ref-gold); }
+.referee-group summary svg:last-child { color: var(--ref-muted); transition: transform 150ms ease; }
+.referee-group[open] summary svg:last-child { transform: rotate(180deg); }
+.referee-clue-form { background: #2e2621; border-color: #664e38; }
+.referee-group-body { display: grid; gap: 8px; margin: 0 10px; padding: 9px 0 10px; border-top: 1px solid var(--ref-line); }
+.referee-action-list .referee-button { justify-content: start; text-align: start; }
+.referee-switch span { flex: 1; }
+.referee-switch b { font-size: .7rem; color: var(--ref-muted); flex: none; }
+.referee-switch[aria-pressed="true"] b { color: var(--ref-gold); }
+.referee-form-row { display: flex; gap: 6px; align-items: stretch; }
+.referee-form-row input { flex: 1; min-inline-size: 0; }
+.referee-clue-form :is(input, select),
+.referee-admin :is(input, select, textarea) {
+  min-height: 44px;
+  border-radius: 9px;
+  padding: 6px 9px;
+  border: 1px solid #514955;
+  background: #1d1b22;
+  color: var(--ref-text);
+  font-size: .95rem;
+}
+.referee-clue-form select { color: var(--ref-gold); min-inline-size: 65px; }
+.referee-pins {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  background: #141318;
+  border-radius: 9px;
+}
+.referee-pins dt { color: var(--ref-muted); }
+.referee-pins dd { text-align: start; color: var(--ref-gold); font: 700 1.08rem var(--font-mono); }
+.referee-event-log { overflow-y: auto; max-height: 12rem; font-size: .82rem; }
+.referee-event-log li { display: flex; gap: 8px; padding-bottom: 7px; border-bottom: 1px solid var(--ref-line); }
+.referee-event-log li span:first-child { flex: none; color: var(--ref-gold); }
+
+.referee-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 9px;
+  border-block-start: 1px solid var(--ref-line);
+  background: #15141a;
+}
+.referee-quick-actions .referee-button { min-height: 46px; }
+
+.referee-connection {
+  min-height: 30px;
+  flex: none;
+  padding: 4px 10px;
+  color: #f0c679;
+  border-block-start: 1px solid var(--ref-line);
+  font-size: .72rem;
+  font-weight: 750;
+}
+.referee-connection[data-connected="true"] { color: #9be4bf; }
+.referee-connection svg { inline-size: 14px; block-size: 14px; }
+.referee-room { margin-inline-start: auto; max-width: 53%; overflow: hidden; text-overflow: ellipsis; color: var(--ref-muted); font: 600 .68rem var(--font-mono); }
+.referee-feedback {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-block-end: 8px;
+  padding: 8px 10px;
+  border: 1px solid #416c57;
+  border-radius: 10px;
+  background: #163329;
+  color: #c2f4d8;
+  font-weight: 750;
+}
+.referee-feedback[data-type="err"] { border-color: #8b4c56; background: #451f2a; color: #ffcbce; }
+
+.referee-admin { font-size: .875rem; }
+.referee-admin > :is(div, form) { border-color: var(--ref-line); background: #1d1b22; border-radius: 13px; }
+.referee-admin button { min-height: 44px; padding-inline: 8px; font-size: .82rem; transition: background-color 150ms ease; }
+.referee-admin button > div:first-child { font-size: .83rem; }
+.referee-admin [class*="text-[10px]"] { font-size: .71rem; }
+.referee-admin [class*="text-[11px]"] { font-size: .75rem; }
+.referee-admin input[type="file"] { max-inline-size: 100%; min-height: 48px; font-size: .79rem; }
+.referee-admin input[type="file"]::file-selector-button { min-height: 35px; cursor: pointer; }
+.referee-admin select { text-overflow: ellipsis; }
+
+.referee-board {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--ref-line);
+  border-radius: 16px;
+  background: radial-gradient(ellipse at top, #27232a 0, #17161c 60%);
+  overflow: auto;
+}
+
+.referee-board-heading { flex: none; flex-wrap: wrap; }
+.referee-board-heading .referee-board-tools { margin-inline-start: auto; gap: 5px; }
+.referee-board-tools .referee-button { font-size: .77rem; white-space: nowrap; }
+.referee-board-frame {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 360px;
+  padding: 6px 3px 8px;
+  container-type: inline-size;
+}
+
+.referee-board [data-testid="codenames-board-grid"] { gap: clamp(5px, 1.5cqi, 13px); }
+.referee-board [data-testid^="board-card-"] { padding: clamp(3px, 1.1cqi, 9px); border-radius: clamp(7px, 1.8cqi, 16px); min-width: 0; }
+.referee-board .codenames-card-header { padding-inline: 0; gap: 1px; }
+.referee-board .codenames-card-header > span:first-child { font-size: clamp(.57rem, 1.65cqi, .79rem); }
+.referee-board :is(.codenames-card-key, .codenames-card-reveal) {
+  gap: 1px;
+  padding: 1px 2px;
+  font-size: clamp(.56rem, 1.45cqi, .76rem);
+  white-space: nowrap;
+}
+.referee-board .codenames-card-plate { padding: 2px 0; }
+.referee-board .codenames-card-word {
+  padding: 0;
+  --ref-word-size: clamp(.79rem, 3.65cqi, 1.7rem);
+  font-size: var(--ref-word-size);
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.24;
+}
+.referee-board [data-grid-size="16"] .codenames-card-word { --ref-word-size: clamp(.87rem, 4.25cqi, 2.05rem); }
+.referee-board [data-font-scale="large"] .codenames-card-word { --ref-word-size: clamp(.84rem, 4.05cqi, 1.95rem); }
+.referee-board [data-font-scale="xlarge"] .codenames-card-word { --ref-word-size: clamp(.88rem, 4.45cqi, 2.2rem); }
+.referee-board .codenames-card-word[data-long-word] { font-size: max(.69rem, calc(var(--ref-word-size) * .82)); }
+.referee-board .codenames-card-black-label { font-size: clamp(.53rem, 1.7cqi, .78rem); }
+.referee-board .codenames-card-black-label svg,
+.referee-board .codenames-card-junior-icon svg { width: clamp(11px, 3.1cqi, 22px); height: auto; }
+
+.referee-board-footer {
+  flex: none;
+  flex-wrap: wrap;
+  color: var(--ref-muted);
+  font-size: .75rem;
+}
+.referee-board-footer span:last-child { color: var(--ref-gold); overflow-wrap: anywhere; }
+
+/* Keep the original board and its state when it fills the viewport. */
+.referee-workspace[data-expanded="true"] .referee-board {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  border-radius: 0;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+}
+
+@media (width < 380px) {
+  .referee-header-actions { gap: 3px; }
+  .referee-audience-button svg { display: none; }
+  .referee-identity-icon { inline-size: 31px; block-size: 35px; }
+  .referee-identity { gap: 5px; }
+  .referee-header h1 { font-size: 1.05rem; }
+}
+
+@media (width < 960px) {
+  .referee-workspace:not([data-expanded="true"]):not([data-tab="board"]) .referee-board,
+  .referee-workspace[data-tab="board"] .referee-sidebar { display: none; }
+  .referee-board-frame { min-block-size: 335px; }
+}
+
+@media (width >= 640px) {
+  .referee-workspace { gap: 12px; }
+  .referee-header { padding-block-end: 10px; }
+  .referee-identity-icon { inline-size: 44px; block-size: 44px; }
+  .referee-identity h1 { font-size: 1.35rem; }
+  .referee-tabs button { flex: 0 0 auto; padding-inline: 18px; }
+}
+
+@media (width >= 960px) {
+  .referee-workspace {
+    grid-template-columns: minmax(325px, clamp(345px, 30vw, 455px)) minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+  .referee-shell { grid-column: 1 / -1; }
+  .referee-panel { padding: 12px; }
+  .referee-match { padding: 14px; }
+  .referee-quick-actions { gap: 8px; padding: 10px 12px; }
+  .referee-quick-actions .referee-button { min-height: 49px; }
+  .referee-board { grid-column: 2; padding: 13px; }
+  .referee-board-heading { padding-inline: 4px; min-height: 49px; }
+  .referee-board-tools .referee-button { font-size: .85rem; }
+  .referee-board-footer { padding: 4px; }
+  .referee-workspace[data-tab="board"] .referee-board {
+    border-color: #7a6040;
+    grid-column: 1 / -1;
+  }
+  .referee-workspace[data-tab="board"] .referee-sidebar { display: none; }
+}

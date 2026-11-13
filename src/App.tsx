@@ -109,6 +109,8 @@ export default function App() {
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [showCinematicClue, setShowCinematicClue] = useState<boolean>(false);
+  const [dismissedRoundStatus, setDismissedRoundStatus] = useState<string | null>(null);
+  const [showRefereeRoundStatus, setShowRefereeRoundStatus] = useState(false);
   const [actionBannerError, setActionBannerError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -631,6 +633,16 @@ export default function App() {
     }
   }, []);
 
+  const toggleSound = () => {
+    soundFX.setMuted(gameState.settings.soundEnabled);
+    if (role === 'referee' || sessionToken) {
+      dispatchAction({
+        action: 'update_settings',
+        settings: { soundEnabled: !gameState.settings.soundEnabled },
+      });
+    }
+  };
+
   useEffect(() => {
     if (inTitleScreen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -677,6 +689,11 @@ export default function App() {
     toggleFullscreen,
   ]);
 
+  useEffect(() => {
+    setDismissedRoundStatus(null);
+    setShowRefereeRoundStatus(false);
+  }, [gameState.roomId, gameState.roundNumber, gameState.status]);
+
   if (inTitleScreen) {
     return (
       <TitleScreen
@@ -704,316 +721,310 @@ export default function App() {
   };
 
   return (
-    <main className="w-screen h-screen overflow-hidden tabletop-felt flex flex-col justify-between select-none">
+    <main className={`w-full overflow-hidden tabletop-felt flex flex-col justify-between select-none ${role === 'referee' ? 'h-dvh' : 'h-screen'}`}>
       {/* Unified Top Perimeter HUD Dock */}
-      <div className="shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 sm:gap-3 z-20">
-        {/* Right Zone: Red & Blue Team Score Counters (or Cooperative Target Counter) */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div
-            data-testid="red-team-hud"
-            className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
-              isRedTurn
-                ? 'bg-red-950/90 border-red-500 shadow-[0_0_16px_rgba(220,38,38,0.35)]'
-                : 'bg-stone-900/80 border-red-900/40 opacity-80'
-            }`}
-          >
-            <div className="text-right">
-              <div className="text-[10px] text-red-300 font-bold leading-none">
-                {isCooperative
-                  ? '◇ الأهداف المشتركة المتبقية'
-                  : gameState.startingTeam === 'red'
-                  ? '◇ الأحمر · البادئ'
-                  : '◇ الفريق الأحمر'}
-              </div>
-              <div className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[115px] sm:max-w-[160px]">
-                {gameState.redTeamName}
-              </div>
-            </div>
-            <span
-              data-testid="red-remaining-count"
-              className="text-2xl sm:text-3xl font-mono font-extrabold text-red-400 tabular-nums px-1"
-            >
-              {gameState.redRemaining}
-            </span>
-          </div>
-
-          {isCooperative ? (
+      {role !== 'referee' && (
+        <div className="shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 sm:gap-3 z-20">
+          {/* Right Zone: Red & Blue Team Score Counters (or Cooperative Target Counter) */}
+          <div className="flex items-center gap-2 shrink-0">
             <div
-              data-testid="coop-turns-hud"
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border bg-amber-950/60 border-amber-500/60"
-            >
-              <div className="text-right">
-                <div className="text-[10px] text-amber-300 font-bold leading-none">
-                  الطور التعاوني
-                </div>
-                <div className="text-xs sm:text-sm font-extrabold text-white">
-                  الأدوار المتبقية
-                </div>
-              </div>
-              <span
-                data-testid="coop-turns-remaining"
-                className="text-2xl sm:text-3xl font-mono font-extrabold text-amber-300 tabular-nums px-1"
-              >
-                {gameState.coopTurnsRemaining ?? 0}
-              </span>
-            </div>
-          ) : (
-            <div
-              data-testid="blue-team-hud"
+              data-testid="red-team-hud"
               className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
-                !isRedTurn
-                  ? 'bg-blue-950/90 border-blue-500 shadow-[0_0_16px_rgba(37,99,235,0.35)]'
-                  : 'bg-stone-900/80 border-blue-900/40 opacity-80'
+                isRedTurn
+                  ? 'bg-red-950/90 border-red-500 shadow-[0_0_16px_rgba(220,38,38,0.35)]'
+                  : 'bg-stone-900/80 border-red-900/40 opacity-80'
               }`}
             >
               <div className="text-right">
-                <div className="text-[10px] text-blue-300 font-bold leading-none">
-                  {gameState.startingTeam === 'blue' ? '○ الأزرق · البادئ' : '○ الفريق الأزرق'}
+                <div className="text-[10px] text-red-300 font-bold leading-none">
+                  {isCooperative
+                    ? '◇ الأهداف المشتركة المتبقية'
+                    : gameState.startingTeam === 'red'
+                    ? '◇ الأحمر · البادئ'
+                    : '◇ الفريق الأحمر'}
                 </div>
                 <div className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[115px] sm:max-w-[160px]">
-                  {gameState.blueTeamName}
+                  {gameState.redTeamName}
                 </div>
               </div>
               <span
-                data-testid="blue-remaining-count"
-                className="text-2xl sm:text-3xl font-mono font-extrabold text-blue-400 tabular-nums px-1"
+                data-testid="red-remaining-count"
+                className="text-2xl sm:text-3xl font-mono font-extrabold text-red-400 tabular-nums px-1"
               >
-                {gameState.blueRemaining}
+                {gameState.redRemaining}
               </span>
             </div>
-          )}
-        </div>
 
-        {/* Center Zone: Current Turn Indicator & Active Clue Readout */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-full">
-          <div
-            data-testid="active-turn-banner"
-            className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2.5 ${
-              isRedTurn
-                ? 'bg-red-900/35 border-red-500/50 text-red-100'
-                : 'bg-blue-900/35 border-blue-500/50 text-blue-100'
-            }`}
-          >
-            <span className="text-xs sm:text-sm font-extrabold whitespace-nowrap">
-              {isCooperative ? 'المهمة التعاونية' : `الدور الآن: ${activeTeamName}`}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span className="font-mono text-xs text-amber-300 tabular-nums whitespace-nowrap">
-              دور #{gameState.turnsCount}
-            </span>
-          </div>
-
-          {gameState.currentClue ? (
-            <button
-              type="button"
-              data-testid="current-clue-banner"
-              onClick={() => setShowCinematicClue(true)}
-              title="انقر لإعادة عرض التلميح بحجم سينمائي على الشاشة"
-              className={`px-3.5 py-1.5 rounded-xl border-2 flex items-center gap-2.5 shadow-lg cursor-pointer transition-all hover:scale-[1.02] ${
-                gameState.currentClue.team === 'red'
-                  ? 'bg-gradient-to-r from-red-950/95 via-stone-900 to-red-950/95 border-red-400/80 shadow-[0_0_20px_rgba(220,38,38,0.3)]'
-                  : 'bg-gradient-to-r from-blue-950/95 via-stone-900 to-blue-950/95 border-blue-400/80 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
-              }`}
-            >
-              <span className="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">
-                التلميح:
-              </span>
-              <span className="px-2.5 py-0.5 rounded-lg bg-[#FAF8F2] text-stone-950 text-sm sm:text-lg font-black tracking-tight shadow-sm">
-                {gameState.currentClue.word}
-              </span>
-              <span
-                className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs sm:text-base tabular-nums border ${
-                  gameState.currentClue.team === 'red'
-                    ? 'bg-red-600 text-white border-red-300'
-                    : 'bg-blue-600 text-white border-blue-300'
+            {isCooperative ? (
+              <div
+                data-testid="coop-turns-hud"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border bg-amber-950/60 border-amber-500/60"
+              >
+                <div className="text-right">
+                  <div className="text-[10px] text-amber-300 font-bold leading-none">
+                    الطور التعاوني
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-white">
+                    الأدوار المتبقية
+                  </div>
+                </div>
+                <span
+                  data-testid="coop-turns-remaining"
+                  className="text-2xl sm:text-3xl font-mono font-extrabold text-amber-300 tabular-nums px-1"
+                >
+                  {gameState.coopTurnsRemaining ?? 0}
+                </span>
+              </div>
+            ) : (
+              <div
+                data-testid="blue-team-hud"
+                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border transition-all ${
+                  !isRedTurn
+                    ? 'bg-blue-950/90 border-blue-500 shadow-[0_0_16px_rgba(37,99,235,0.35)]'
+                    : 'bg-stone-900/80 border-blue-900/40 opacity-80'
                 }`}
               >
-                {gameState.currentClue.count === 'unlimited'
-                  ? '∞'
-                  : gameState.currentClue.count}
-              </span>
-              <span className="text-[11px] font-mono text-amber-200 font-bold tabular-nums hidden sm:inline">
-                (متبقي:{' '}
-                {gameState.currentClue.guessesAllowed === null
-                  ? '∞'
-                  : Math.max(
-                      0,
-                      gameState.currentClue.guessesAllowed -
-                        gameState.currentClue.guessesMade
-                    )}
-                )
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-bold hidden md:inline">
-                تكبير
-              </span>
-            </button>
-          ) : (
-            <span
-              data-testid="waiting-clue-label"
-              className="hidden xl:inline-block text-xs text-stone-400"
-            >
-              بانتظار إعلان التلميح من القائد أو اختيار البطاقات
-            </span>
-          )}
-        </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-blue-300 font-bold leading-none">
+                    {gameState.startingTeam === 'blue' ? '○ الأزرق · البادئ' : '○ الفريق الأزرق'}
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-white truncate max-w-[115px] sm:max-w-[160px]">
+                    {gameState.blueTeamName}
+                  </div>
+                </div>
+                <span
+                  data-testid="blue-remaining-count"
+                  className="text-2xl sm:text-3xl font-mono font-extrabold text-blue-400 tabular-nums px-1"
+                >
+                  {gameState.blueRemaining}
+                </span>
+              </div>
+            )}
+          </div>
 
-        {/* Left Zone: Timer, QR Modal Button & Utility Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {gameState.settings.timerEnabled && (
+          {/* Center Zone: Current Turn Indicator & Active Clue Readout */}
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-full">
             <div
-              data-testid="turn-timer"
-              className={`px-3 py-1.5 rounded-xl bg-stone-900 border font-mono font-extrabold text-sm sm:text-base tabular-nums ${
-                gameState.timerRemainingSeconds <= 15
-                  ? 'border-red-500 text-red-400'
-                  : 'border-stone-700 text-amber-300'
+              data-testid="active-turn-banner"
+              className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2.5 ${
+                isRedTurn
+                  ? 'bg-red-900/35 border-red-500/50 text-red-100'
+                  : 'bg-blue-900/35 border-blue-500/50 text-blue-100'
               }`}
             >
-              {formatTimer(gameState.timerRemainingSeconds)}
+              <span className="text-xs sm:text-sm font-extrabold whitespace-nowrap">
+                {isCooperative ? 'المهمة التعاونية' : `الدور الآن: ${activeTeamName}`}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="font-mono text-xs text-amber-300 tabular-nums whitespace-nowrap">
+                دور #{gameState.turnsCount}
+              </span>
             </div>
-          )}
 
-          {/* QR & Role Switcher Button */}
-          <button
-            type="button"
-            data-testid="open-qr-modal-btn"
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setShowShareModal(true);
-            }}
-            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-200 border border-amber-200/25 text-xs font-bold cursor-pointer whitespace-nowrap flex items-center gap-1.5"
-          >
-            <svg
-              className="w-3.5 h-3.5 text-amber-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
-            <span>
-              {role === 'audience'
-                ? 'باركود القائد / الحكم (QR)'
-                : role === 'referee'
-                ? 'وضع الحكم · QR'
-                : role === 'spymaster_red'
-                ? 'القائد الأحمر · QR'
-                : 'القائد الأزرق · QR'}
-            </span>
-          </button>
-
-          {role === 'audience' ? (
-            <button
-              type="button"
-              data-testid="quick-referee-toggle-btn"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                claimOrganizer(false);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-400/35 text-xs font-extrabold cursor-pointer whitespace-nowrap"
-            >
-              لوحة الحكم
-            </button>
-          ) : (
-            <button
-              type="button"
-              data-testid="quick-audience-toggle-btn"
-              onClick={(e) => {
-                e.currentTarget.blur();
-                roleRef.current = 'audience';
-                setRole('audience');
-                setGameState((prev) => ({
-                  ...prev,
-                  role: 'audience',
-                  cards: prev.cards.map((c) => ({ ...c, secretColor: undefined })),
-                }));
-              }}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-extrabold cursor-pointer whitespace-nowrap"
-            >
-              شاشة اللعب (إخفاء المفتاح)
-            </button>
-          )}
-
-          {role === 'audience' &&
-            (gameState.settings.allowAudienceClickInLocalMode || Boolean(sessionToken)) && (
+            {gameState.currentClue ? (
               <button
                 type="button"
+                data-testid="current-clue-banner"
+                onClick={() => setShowCinematicClue(true)}
+                title="انقر لإعادة عرض التلميح بحجم سينمائي على الشاشة"
+                className={`px-3.5 py-1.5 rounded-xl border-2 flex items-center gap-2.5 shadow-lg cursor-pointer transition-all hover:scale-[1.02] ${
+                  gameState.currentClue.team === 'red'
+                    ? 'bg-gradient-to-r from-red-950/95 via-stone-900 to-red-950/95 border-red-400/80 shadow-[0_0_20px_rgba(220,38,38,0.3)]'
+                    : 'bg-gradient-to-r from-blue-950/95 via-stone-900 to-blue-950/95 border-blue-400/80 shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+                }`}
+              >
+                <span className="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">
+                  التلميح:
+                </span>
+                <span className="px-2.5 py-0.5 rounded-lg bg-[#FAF8F2] text-stone-950 text-sm sm:text-lg font-black tracking-tight shadow-sm">
+                  {gameState.currentClue.word}
+                </span>
+                <span
+                  className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs sm:text-base tabular-nums border ${
+                    gameState.currentClue.team === 'red'
+                      ? 'bg-red-600 text-white border-red-300'
+                      : 'bg-blue-600 text-white border-blue-300'
+                  }`}
+                >
+                  {gameState.currentClue.count === 'unlimited'
+                    ? '∞'
+                    : gameState.currentClue.count}
+                </span>
+                <span className="text-[11px] font-mono text-amber-200 font-bold tabular-nums hidden sm:inline">
+                  (متبقي:{' '}
+                  {gameState.currentClue.guessesAllowed === null
+                    ? '∞'
+                    : Math.max(
+                        0,
+                        gameState.currentClue.guessesAllowed -
+                          gameState.currentClue.guessesMade
+                      )}
+                  )
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-400/30 font-bold hidden md:inline">
+                  تكبير
+                </span>
+              </button>
+            ) : (
+              <span
+                data-testid="waiting-clue-label"
+                className="hidden xl:inline-block text-xs text-stone-400"
+              >
+                بانتظار إعلان التلميح من القائد أو اختيار البطاقات
+              </span>
+            )}
+          </div>
+
+          {/* Left Zone: Timer, QR Modal Button & Utility Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {gameState.settings.timerEnabled && (
+              <div
+                data-testid="turn-timer"
+                className={`px-3 py-1.5 rounded-xl bg-stone-900 border font-mono font-extrabold text-sm sm:text-base tabular-nums ${
+                  gameState.timerRemainingSeconds <= 15
+                    ? 'border-red-500 text-red-400'
+                    : 'border-stone-700 text-amber-300'
+                }`}
+              >
+                {formatTimer(gameState.timerRemainingSeconds)}
+              </div>
+            )}
+
+            {/* QR & Role Switcher Button */}
+            <button
+              type="button"
+              data-testid="open-qr-modal-btn"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setShowShareModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-200 border border-amber-200/25 text-xs font-bold cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+            >
+              <svg
+                className="w-3.5 h-3.5 text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              <span>
+                {role === 'audience'
+                  ? 'باركود القائد / الحكم (QR)'
+                  : role === 'spymaster_red'
+                  ? 'القائد الأحمر · QR'
+                  : 'القائد الأزرق · QR'}
+              </span>
+            </button>
+
+            {role === 'audience' ? (
+              <button
+                type="button"
+                data-testid="quick-referee-toggle-btn"
                 onClick={(e) => {
                   e.currentTarget.blur();
-                  dispatchAction({ action: 'end_turn' });
+                  claimOrganizer(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-300 border border-amber-400/35 text-xs font-extrabold cursor-pointer whitespace-nowrap"
+              >
+                لوحة الحكم
+              </button>
+            ) : (
+              <button
+                type="button"
+                data-testid="quick-audience-toggle-btn"
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  roleRef.current = 'audience';
+                  setRole('audience');
+                  setGameState((prev) => ({
+                    ...prev,
+                    role: 'audience',
+                    cards: prev.cards.map((c) => ({ ...c, secretColor: undefined })),
+                  }));
                 }}
                 className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-extrabold cursor-pointer whitespace-nowrap"
               >
-                إنهاء الدور
+                شاشة اللعب (إخفاء المفتاح)
               </button>
             )}
 
-          <button
-            type="button"
-            aria-label="الإعدادات"
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setShowSettingsModal(true);
-            }}
-            className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 cursor-pointer"
-          >
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
+            {role === 'audience' &&
+              (gameState.settings.allowAudienceClickInLocalMode || Boolean(sessionToken)) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    dispatchAction({ action: 'end_turn' });
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-extrabold cursor-pointer whitespace-nowrap"
+                >
+                  إنهاء الدور
+                </button>
+              )}
 
-          <button
-            type="button"
-            aria-label={gameState.settings.soundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}
-            onClick={(e) => {
-              e.currentTarget.blur();
-              soundFX.setMuted(gameState.settings.soundEnabled);
-              if (role === 'referee' || Boolean(sessionToken)) {
-                dispatchAction({
-                  action: 'update_settings',
-                  settings: { soundEnabled: !gameState.settings.soundEnabled },
-                });
-              }
-            }}
-            className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 cursor-pointer"
-          >
-            {gameState.settings.soundEnabled ? (
+            <button
+              type="button"
+              aria-label="الإعدادات"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                setShowSettingsModal(true);
+              }}
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 cursor-pointer"
+            >
               <svg
-                className="w-4 h-4 text-amber-300"
+                className="w-4 h-4"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
-            ) : (
-              <svg
-                className="w-4 h-4 text-stone-500"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                <line x1="23" y1="9" x2="17" y2="15" />
-                <line x1="17" y1="9" x2="23" y2="15" />
-              </svg>
-            )}
-          </button>
+            </button>
+
+            <button
+              type="button"
+              aria-label={gameState.settings.soundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                toggleSound();
+              }}
+              className="p-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 cursor-pointer"
+            >
+              {gameState.settings.soundEnabled ? (
+                <svg
+                  className="w-4 h-4 text-amber-300"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4 text-stone-500"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {actionBannerError && (
         <div
@@ -1132,6 +1143,11 @@ export default function App() {
         {role === 'referee' && (
           <RefereeView
             gameState={gameState}
+            wsConnected={wsConnected}
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onReplayClue={() => setShowCinematicClue(true)}
+            onShowRoundStatus={() => setShowRefereeRoundStatus(true)}
+            onToggleSound={toggleSound}
             sessionToken={sessionToken}
             pin={pin}
             onDispatchAction={dispatchAction}
@@ -1182,17 +1198,25 @@ export default function App() {
         />
       )}
 
-      <StatusModal
-        gameState={gameState}
-        canControlMatch={
-          role === 'referee' ||
-          (role === 'audience' && gameState.settings.allowAudienceClickInLocalMode)
-        }
-        onResume={() => dispatchAction({ action: 'toggle_pause' })}
-        onNewRound={() => dispatchAction({ action: 'new_round' })}
-        onUndo={() => dispatchAction({ action: 'undo' })}
-        onBackToTitle={() => setInTitleScreen(true)}
-      />
+      {(role !== 'referee' ||
+        showRefereeRoundStatus ||
+        (gameState.status === 'gameover' && dismissedRoundStatus !== gameState.endedAt?.toString())) && (
+        <StatusModal
+          gameState={gameState}
+          onClose={role === 'referee' ? () => {
+            setShowRefereeRoundStatus(false);
+            setDismissedRoundStatus(gameState.endedAt?.toString() ?? null);
+          } : undefined}
+          canControlMatch={
+            role === 'referee' ||
+            (role === 'audience' && gameState.settings.allowAudienceClickInLocalMode)
+          }
+          onResume={() => dispatchAction({ action: 'toggle_pause' })}
+          onNewRound={() => dispatchAction({ action: 'new_round' })}
+          onUndo={() => dispatchAction({ action: 'undo' })}
+          onBackToTitle={() => setInTitleScreen(true)}
+        />
+      )}
     </main>
   );
 }

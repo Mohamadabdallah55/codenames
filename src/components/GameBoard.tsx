@@ -146,6 +146,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
       <div
         data-testid="codenames-board-grid"
         data-grid-size={cards.length}
+        data-font-scale={settings.fontScale}
         className={`w-full h-full grid ${
           is16Grid ? 'grid-cols-4 grid-rows-4' : 'grid-cols-5 grid-rows-5'
         } ${compact ? 'gap-1.5 sm:gap-2' : 'gap-2 sm:gap-3 lg:gap-3.5'}`}
@@ -219,7 +220,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
               )}
 
               {/* Authentic Tabletop Dossier Top Strip */}
-              <div className="w-full flex items-center justify-between px-1 sm:px-1.5 z-10 pointer-events-none">
+              <div className="codenames-card-header w-full flex items-center justify-between px-1 sm:px-1.5 z-10 pointer-events-none">
                 <span
                   className={`font-mono text-[10px] sm:text-xs font-bold tabular-nums ${
                     card.revealed || isUnrevealedBlackOverlay
@@ -241,7 +242,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
 
                 {!card.revealed && secretInfo && (
                   <span
-                    className={`text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${secretInfo.badgeClass}`}
+                    className={`codenames-card-key text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${secretInfo.badgeClass}`}
                   >
                     <span>{secretInfo.symbol}</span>
                     <span>{secretInfo.label}</span>
@@ -249,7 +250,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
                 )}
 
                 {card.revealed && (
-                  <span className="text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-black/30 text-white/95 flex items-center gap-1">
+                  <span className="codenames-card-reveal text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-black/30 text-white/95 flex items-center gap-1">
                     <span>
                       {revealedColor === 'red'
                         ? '◇ الأحمر'
@@ -265,14 +266,14 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
 
               {/* Authentic Lower White/Ivory Word Plate */}
               <div
-                className={`w-full flex-1 flex flex-col items-center justify-center rounded-lg sm:rounded-xl px-1.5 py-1 my-0.5 transition-colors ${
+                className={`codenames-card-plate w-full flex-1 flex flex-col items-center justify-center rounded-lg sm:rounded-xl px-1.5 py-1 my-0.5 transition-colors ${
                   !card.revealed && !isUnrevealedBlackOverlay
                     ? 'bg-[#FAF8F2] border border-[#D8CBB3] shadow-inner'
                     : ''
                 }`}
               >
                 {isJunior && !compact && (
-                  <div className="mb-0.5">
+                  <div className="codenames-card-junior-icon mb-0.5">
                     {renderJuniorCardIcon(
                       card.iconType,
                       card.revealed || isUnrevealedBlackOverlay
@@ -281,7 +282,8 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
                 )}
 
                 <span
-                  className={`font-extrabold text-center leading-tight tracking-tight break-words max-w-full px-0.5 ${getWordFontSizeClass(
+                  data-long-word={card.wordAr.split(/\s+/).some((part) => part.length >= 8) || undefined}
+                  className={`codenames-card-word font-extrabold text-center leading-tight tracking-tight break-words max-w-full px-0.5 ${getWordFontSizeClass(
                     card.wordAr
                   )} ${isUnrevealedBlackOverlay ? 'text-amber-300' : ''}`}
                 >
@@ -301,7 +303,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
                 )}
 
                 {card.revealed && revealedColor === 'black' && (
-                  <div className="mt-1 flex items-center gap-1 text-red-400 text-[10px] sm:text-xs font-extrabold">
+                  <div className="codenames-card-black-label mt-1 flex items-center gap-1 text-red-400 text-[10px] sm:text-xs font-extrabold">
                     <svg
                       className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0"
                       viewBox="0 0 24 24"

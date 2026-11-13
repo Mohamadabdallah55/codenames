@@ -771,6 +771,7 @@ interface StatusModalProps {
   onNewRound: () => void;
   onUndo: () => void;
   onBackToTitle: () => void;
+  onClose?: () => void;
 }
 
 export const StatusModal: React.FC<StatusModalProps> = ({
@@ -780,6 +781,7 @@ export const StatusModal: React.FC<StatusModalProps> = ({
   onNewRound,
   onUndo,
   onBackToTitle,
+  onClose,
 }) => {
   if (gameState.status !== 'paused' && gameState.status !== 'gameover') {
     return null;
@@ -803,6 +805,12 @@ export const StatusModal: React.FC<StatusModalProps> = ({
       aria-modal="true"
     >
       <div className="w-full max-w-xl bg-stone-900 border-2 border-amber-300/35 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5 relative overflow-hidden my-auto">
+        {onClose && (
+          <button type="button" onClick={onClose} aria-label="العودة إلى أدوات الحكم"
+            className="absolute top-3 end-3 z-10 h-11 w-11 rounded-xl border border-stone-700 bg-stone-950 text-xl text-amber-200 hover:bg-stone-800 cursor-pointer">
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
         {isGameOver && (
           <div
             className={`h-2 w-full absolute top-0 inset-x-0 ${

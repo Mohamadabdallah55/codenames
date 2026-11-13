@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  ArrowRight, BookOpen, ChevronDown, Clock3, Eye, EyeOff, Gamepad2, Grid3X3,
+  KeyRound, ListChecks, Maximize2, MessageSquarePlus, Monitor, MousePointer2,
+  Pause, Play, Plus, QrCode, RotateCcw, Settings2, ShieldCheck, SkipForward,
+  SlidersHorizontal, Sparkles, TriangleAlert, Trophy, Undo2, Users,
+  Volume2, VolumeX, Wifi, WifiOff,
+} from 'lucide-react';
+import './referee.css';
 import {
   ALL_WORD_CATEGORIES,
   ClientGameState,
@@ -30,6 +38,11 @@ interface RefereeViewProps {
   }>;
   onOpenQrModal: () => void;
   onExitToAudience: () => void;
+  wsConnected: boolean;
+  onOpenSettings: () => void;
+  onToggleSound: () => void;
+  onReplayClue: () => void;
+  onShowRoundStatus: () => void;
 }
 
 interface WordCatalogItem extends WordEntry {
@@ -40,6 +53,15 @@ interface TournamentWithStandings extends TournamentCompetition {
   standings: TournamentStandingRow[];
 }
 
+const REFEREE_TABS = [
+  { id: 'controls', label: 'التحكم', icon: SlidersHorizontal },
+  { id: 'modes', label: 'الأوضاع', icon: Gamepad2 },
+  { id: 'board', label: 'اللوحة', icon: Grid3X3 },
+  { id: 'teams', label: 'الفرق', icon: Users },
+  { id: 'words', label: 'الكلمات', icon: BookOpen },
+  { id: 'tournament', label: 'البطولة', icon: Trophy },
+] as const;
+
 export const RefereeView: React.FC<RefereeViewProps> = ({
   gameState,
   sessionToken,
@@ -47,6 +69,11 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
   onDispatchAction,
   onOpenQrModal,
   onExitToAudience,
+  wsConnected,
+  onOpenSettings,
+  onToggleSound,
+  onReplayClue,
+  onShowRoundStatus,
 }) => {
   const [showSecretOnRefBoard, setShowSecretOnRefBoard] = useState(true);
   const [clueWord, setClueWord] = useState('');
@@ -85,9 +112,28 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
   const [newFreeTeamName, setNewFreeTeamName] = useState('');
 
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
-  const [activeRefTab, setActiveRefTab] = useState<
-    'controls' | 'modes' | 'board' | 'teams' | 'words' | 'tournament'
-  >('controls');
+  const [activeRefTab, setActiveRefTab] = useState<(typeof REFEREE_TABS)[number]['id']>('controls');
+  const [expandedBoard, setExpandedBoard] = useState(false);
+  const [showPins, setShowPins] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLButtonElement>(null);
+  const closeBoardRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!expandedBoard) return;
+    closeBoardRef.current?.focus();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || document.querySelector('[aria-modal="true"]')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setExpandedBoard(false);
+    };
+    window.addEventListener('keydown', handleEscape, true);
+    return () => {
+      window.removeEventListener('keydown', handleEscape, true);
+      returnFocusRef.current?.focus();
+    };
+  }, [expandedBoard]);
 
   const showTempFeedback = (type: 'ok' | 'err', text: string) => {
     setFeedback({ type, text });
@@ -178,13 +224,8 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
       },
     });
     if (res.ok) {
-      const newPin = res.meta?.spymasterPin;
-      showTempFeedback(
-        'ok',
-        `بدأت جولة جديدة (${GAME_MODES_CATALOG[selectedMode].nameAr})${
-          newPin ? ` — رمز القائد الجديد: ${newPin}` : ''
-        }`
-      );
+      setShowPins(false);
+      showTempFeedback('ok', `بدأت جولة جديدة (${GAME_MODES_CATALOG[selectedMode].nameAr})`);
     }
   };
 
@@ -193,10 +234,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
       action: 'regenerate_pin',
     });
     if (res.ok) {
-      showTempFeedback(
-        'ok',
-        `تم تدوير الرمز وإلغاء جلسات القادة السابقة. الرمز الجديد: ${res.meta?.spymasterPin || ''}`
-      );
+      showTempFeedback('ok', 'تم تغيير رمز القائد وإلغاء جلسات القادة السابقة.');
     }
   };
 
@@ -389,314 +427,262 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
     reader.readAsText(file);
   };
 
-  const [collapseSidebar, setCollapseSidebar] = useState(false);
+  const activeTeamName = gameState.currentTurn === 'red' ? gameState.redTeamName : gameState.blueTeamName;
+  const cooperative = gameState.gameMode === 'cooperative';
+  const modeName = (GAME_MODES_CATALOG[gameState.gameMode] || GAME_MODES_CATALOG.classic).nameAr;
+  const timerSeconds = gameState.timerRemainingSeconds;
+  const timerLabel = [Math.floor(timerSeconds / 60), timerSeconds % 60]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':');
+  const clue = gameState.currentClue;
+  const guessesRemaining = clue?.guessesAllowed == null
+    ? '∞'
+    : Math.max(0, clue.guessesAllowed - clue.guessesMade);
+  const toggleSecret = () => setShowSecretOnRefBoard((value) => !value);
+  const selectTab = (tab: typeof activeRefTab) => {
+    if (tab === activeRefTab) return;
+    setActiveRefTab(tab);
+    setShowPins(false);
+    panelRef.current?.scrollTo({ top: 0 });
+  };
+  const expandBoard = (event: React.MouseEvent<HTMLButtonElement>) => {
+    returnFocusRef.current = event.currentTarget;
+    setShowPins(false);
+    setExpandedBoard(true);
+  };
 
   return (
-    <div
-      data-testid="referee-view"
-      className="w-full h-full flex flex-col md:flex-row gap-3 overflow-y-auto md:overflow-hidden p-2 sm:p-4"
-    >
-      {/* Right Column: Referee & Platform Admin Suite */}
-      {!collapseSidebar && (
-        <aside className="w-full md:w-[360px] lg:w-[420px] shrink-0 flex flex-col gap-3 bg-stone-900/95 border border-amber-200/20 rounded-2xl p-3.5 sm:p-4 md:overflow-y-auto">
-          <div className="flex items-center justify-between border-b border-stone-800 pb-2.5 gap-2">
+    <div className="referee-workspace" data-testid="referee-view"
+      data-tab={activeRefTab} data-expanded={expandedBoard}>
+      <div className="referee-shell" inert={expandedBoard}>
+        <header className="referee-header">
+          <div className="referee-identity">
+            <span className="referee-identity-icon"><ShieldCheck aria-hidden="true" /></span>
             <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-amber-300">
-                لوحة تحكم الحكم والإدارة — ELITE CLASH
-              </h2>
-              <p className="text-[11px] text-stone-400 font-mono">
-                رمز الحكم: <span className="text-amber-200 font-bold">{gameState.refereePin || '----'}</span> · رمز القائد:{' '}
-                <span className="text-amber-300 font-extrabold">
-                  {gameState.spymasterPin || '----'}
-                </span>
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={onOpenQrModal}
-                className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-stone-950 text-xs font-extrabold cursor-pointer"
-              >
-                QR القائد
-              </button>
-              <button
-                type="button"
-                onClick={onExitToAudience}
-                title="إخفاء المفتاح السري والعودة لشاشة اللعب الكاملة مع بقاء صلاحية النقر"
-                className="px-2.5 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-xs font-bold text-amber-200 border border-amber-300/30 cursor-pointer"
-              >
-                شاشة اللعب
-              </button>
+              <span className="referee-brand" lang="en">ELITE CLASH</span>
+              <h1>لوحة الحكم</h1>
             </div>
           </div>
+          <div className="referee-header-actions">
+            <button type="button" className="referee-icon-button" onClick={onOpenSettings}
+              aria-label="الإعدادات" title="الإعدادات"><Settings2 /></button>
+            <button type="button" className="referee-icon-button" onClick={onToggleSound}
+              aria-pressed={gameState.settings.soundEnabled}
+              aria-label={gameState.settings.soundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}
+              title={gameState.settings.soundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}>
+              {gameState.settings.soundEnabled ? <Volume2 /> : <VolumeX />}
+            </button>
+            <button type="button" className="referee-button referee-audience-button" onClick={onExitToAudience}
+              title="الانتقال إلى شاشة اللعب وإخفاء المفتاح السري">
+              <Monitor /> شاشة اللعب
+            </button>
+          </div>
+        </header>
 
-        {/* 6 Interactive Segmented Tabs */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 p-1 bg-stone-950 rounded-xl border border-stone-800">
-          {[
-            { id: 'controls', label: 'التحكم' },
-            { id: 'modes', label: 'الأوضاع' },
-            { id: 'board', label: 'اللوحة' },
-            { id: 'teams', label: 'الفرق' },
-            { id: 'words', label: 'الكلمات' },
-            { id: 'tournament', label: 'البطولة' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveRefTab(tab.id as typeof activeRefTab)}
-              className={`py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-                activeRefTab === tab.id
-                  ? 'bg-amber-500 text-stone-950'
-                  : 'text-stone-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
+        <nav aria-label="أقسام لوحة الحكم" className="referee-tabs">
+          {REFEREE_TABS.map(({ id, label, icon: Icon }) => (
+            <button key={id} type="button" aria-current={activeRefTab === id ? 'page' : undefined}
+              onClick={() => selectTab(id)}>
+              <Icon aria-hidden="true" />
+              {label}
             </button>
           ))}
-        </div>
+        </nav>
+      </div>
 
-        {feedback && (
-          <div
-            className={`px-3 py-2 rounded-xl text-xs font-bold ${
-              feedback.type === 'ok'
-                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
-                : 'bg-red-950/90 text-red-300 border border-red-500/40'
-            }`}
-          >
-            {feedback.text}
-          </div>
-        )}
-
-        {/* TAB 1: LIVE MATCH & TV BROADCAST CONTROLS */}
-        {activeRefTab === 'controls' && (
-          <div className="space-y-3">
-            {/* Security & Session Rotation Bar */}
-            <div className="p-2.5 rounded-xl bg-stone-950 border border-amber-400/25 flex items-center justify-between text-xs">
-              <div>
-                <span className="text-stone-400">رمز القائد للجولة: </span>
-                <span className="font-mono font-extrabold text-amber-300 text-sm">
-                  {gameState.spymasterPin}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleRegeneratePin}
-                  className="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold cursor-pointer"
-                  title="يلغي جلسات القادة السابقة فورًا ويولد رمزًا جديدًا"
-                >
-                  تدوير الرمز وإلغاء الجلسات
-                </button>
-                <button
-                  type="button"
-                  onClick={onOpenQrModal}
-                  className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold cursor-pointer"
-                >
-                  QR
-                </button>
-              </div>
+      <aside className="referee-sidebar" aria-label="أدوات الحكم" inert={expandedBoard}>
+        <div ref={panelRef} className="referee-panel">
+          {feedback && (
+            <div role="status" className="referee-feedback" data-type={feedback.type}>
+              {feedback.text}
             </div>
-
-            {/* TV Broadcast Motion Graphics Controls */}
-            <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 flex items-center justify-between gap-2 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-stone-300 font-bold">مؤثرات البث التلفزيوني:</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onDispatchAction({
-                      action: 'update_settings',
-                      settings: {
-                        broadcastEffectsEnabled: !gameState.settings.broadcastEffectsEnabled,
-                      },
-                    })
-                  }
-                  className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
-                    gameState.settings.broadcastEffectsEnabled
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-stone-800 text-stone-400'
-                  }`}
-                >
-                  {gameState.settings.broadcastEffectsEnabled ? 'مفعّلة' : 'معطّلة'}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => onDispatchAction({ action: 'skip_broadcast' })}
-                className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 font-bold cursor-pointer"
-              >
-                تخطي المؤثر الحالي ⏭
-              </button>
-            </div>
-
-            {/* Audience Direct Click Permission Toggle */}
-            <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 flex items-center justify-between text-xs">
-              <span className="text-stone-300 font-semibold">
-                السماح بكشف البطاقات من شاشة الجمهور مباشرةً:
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  onDispatchAction({
-                    action: 'update_settings',
-                    settings: {
-                      allowAudienceClickInLocalMode:
-                        !gameState.settings.allowAudienceClickInLocalMode,
-                    },
-                  })
-                }
-                className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
-                  gameState.settings.allowAudienceClickInLocalMode
-                    ? 'bg-amber-500 text-stone-950'
-                    : 'bg-stone-800 text-stone-400'
-                }`}
-              >
-                {gameState.settings.allowAudienceClickInLocalMode ? 'مسموح' : 'مقفل (الحكم فقط)'}
-              </button>
-            </div>
-
-            {/* Clue Form */}
-            <form
-              onSubmit={handleGiveClue}
-              className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2.5"
-            >
-              <div className="text-xs font-bold text-amber-200">
-                إدخال تلميح القائد (
-                {gameState.currentTurn === 'red'
-                  ? gameState.redTeamName
-                  : gameState.blueTeamName}
-                )
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={clueWord}
-                  onChange={(e) => setClueWord(e.target.value)}
-                  placeholder="كلمة التلميح..."
-                  aria-label="كلمة التلميح للحكم"
-                  className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-sm text-white focus:outline-none focus:border-amber-400"
-                />
-                <select
-                  value={String(clueCount)}
-                  onChange={(e) =>
-                    setClueCount(
-                      e.target.value === 'unlimited' ? 'unlimited' : Number(e.target.value)
-                    )
-                  }
-                  aria-label="رقم التلميح للحكم"
-                  className="w-20 px-2 py-2 rounded-lg bg-stone-900 border border-stone-700 text-sm font-mono font-bold text-amber-300"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n) => (
-                    <option key={n} value={String(n)}>
-                      {n}
-                    </option>
-                  ))}
-                  <option value="unlimited">∞</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs cursor-pointer"
-              >
-                إعلان التلميح
-              </button>
-            </form>
-
-            {/* Primary Turn & Match Action Buttons */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => onDispatchAction({ action: 'end_turn' })}
-                className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-200 font-bold text-xs border border-amber-200/20 cursor-pointer"
-              >
-                إنهاء الدور الحالي
-              </button>
-
-              <button
-                type="button"
-                disabled={!gameState.canUndo}
-                onClick={() => onDispatchAction({ action: 'undo' })}
-                className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 disabled:opacity-40 text-stone-100 font-bold text-xs border border-stone-700 cursor-pointer"
-              >
-                تراجع آمن (Undo)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onDispatchAction({ action: 'penalty_invalid_clue' })}
-                className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-red-300 font-bold text-xs border border-red-500/30 cursor-pointer"
-              >
-                عقوبة تلميح مخالف
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onDispatchAction({ action: 'toggle_pause' })}
-                className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-100 font-bold text-xs border border-stone-700 cursor-pointer"
-              >
-                {gameState.status === 'paused' ? 'استئناف الجولة' : 'إيقاف مؤقت'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onDispatchAction({ action: 'restart_round' })}
-                className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs border border-stone-700 cursor-pointer"
-              >
-                إعادة الجولة نفسها
-              </button>
-
-              <button
-                type="button"
-                onClick={handleStartNewRound}
-                className="py-2.5 px-3 rounded-xl bg-red-700 hover:bg-red-600 text-white font-extrabold text-xs cursor-pointer"
-              >
-                جولة جديدة (برمز جديد)
-              </button>
-            </div>
-
-            {/* Toggle Secret Key on Referee Board */}
-            <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 flex items-center justify-between">
-              <span className="text-xs text-stone-300 font-semibold">
-                إظهار ألوان المفتاح السري للحكم
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowSecretOnRefBoard((v) => !v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
-                  showSecretOnRefBoard
-                    ? 'bg-amber-500 text-stone-950'
-                    : 'bg-stone-800 text-stone-300'
-                }`}
-              >
-                {showSecretOnRefBoard ? 'ظاهر للحكم' : 'مخفي'}
-              </button>
-            </div>
-
-            {/* Live Match Event Log */}
-            <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
-              <div className="text-xs font-bold text-stone-400">
-                سجل أحداث المباراة المباشر
-              </div>
-              <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-                {gameState.eventLog.map((evt) => (
-                  <div
-                    key={evt.id}
-                    className="text-xs text-stone-300 border-b border-stone-900 pb-1 leading-relaxed"
-                  >
-                    <span className="font-mono text-[10px] text-amber-400/80 ml-1.5">
-                      [دور {evt.turn}]
-                    </span>
-                    <span>{evt.message}</span>
+          )}
+          {activeRefTab === 'controls' && (
+            <div className="referee-controls">
+              <section className="referee-match" aria-labelledby="referee-match-title">
+                <div className="referee-match-heading">
+                  <div>
+                    <p className="referee-caption">
+                      الجولة {gameState.roundNumber} · {modeName}
+                    </p>
+                    <h2 id="referee-match-title">ملخص المباراة</h2>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                  <div className="referee-match-meta">
+                    {gameState.status === 'playing' ? (
+                      <span className="referee-status" data-status="playing">جارية</span>
+                    ) : (
+                      <button type="button" className="referee-status" data-status={gameState.status}
+                        onClick={onShowRoundStatus}>
+                        {gameState.status === 'paused' ? 'متوقفة مؤقتًا' : 'انتهت الجولة'}
+                        <ChevronDown size={13} />
+                      </button>
+                    )}
+                    <span className="referee-timer" data-urgent={gameState.settings.timerEnabled && gameState.timerRemainingSeconds <= 15}>
+                      <Clock3 size={15} aria-hidden="true" />
+                      <span data-testid="turn-timer" dir={gameState.settings.timerEnabled ? 'ltr' : undefined}>
+                        {gameState.settings.timerEnabled ? timerLabel : 'المؤقت معطّل'}
+                      </span>
+                    </span>
+                  </div>
+                </div>
 
+                <div className="referee-teams">
+                  <div className="referee-score" data-team="red" data-turn={gameState.currentTurn === 'red'}>
+                    <div>
+                      <div className="referee-team-label">{cooperative ? 'الأهداف المشتركة' : 'الفريق الأحمر'}</div>
+                      <strong data-testid="red-team-hud">{gameState.redTeamName}</strong>
+                    </div>
+                    <div className="referee-score-count">
+                      <b data-testid="red-remaining-count">{gameState.redRemaining}</b>
+                      <span>متبقية</span>
+                    </div>
+                  </div>
+                  <div className="referee-score" data-team={cooperative ? 'coop' : 'blue'} data-turn={!cooperative && gameState.currentTurn === 'blue'}>
+                    <div>
+                      <div className="referee-team-label">{cooperative ? 'المهمة التعاونية' : 'الفريق الأزرق'}</div>
+                      <strong data-testid={cooperative ? 'coop-turns-hud' : 'blue-team-hud'}>
+                        {cooperative ? 'ميزانية الأدوار' : gameState.blueTeamName}
+                      </strong>
+                    </div>
+                    <div className="referee-score-count">
+                      <b data-testid={cooperative ? 'coop-turns-remaining' : 'blue-remaining-count'}>
+                        {cooperative ? gameState.coopTurnsRemaining : gameState.blueRemaining}
+                      </b>
+                      <span>{cooperative ? 'أدوار متبقية' : 'متبقية'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="referee-turn" data-testid="active-turn-banner">
+                  <span><b>الدور الآن</b> {cooperative ? 'المهمة التعاونية' : activeTeamName}</span>
+                  <span className="referee-caption">الدور {gameState.turnsCount}</span>
+                </div>
+
+                {clue ? (
+                  <button type="button" className="referee-current-clue" data-testid="current-clue-banner"
+                    onClick={onReplayClue} title="إعادة عرض التلميح بحجم سينمائي">
+                    <span>
+                      <span className="referee-caption">التلميح الحالي</span>
+                      <strong>{clue.word} <b className="referee-clue-count">{clue.count === 'unlimited' ? '∞' : clue.count}</b></strong>
+                    </span>
+                    <span>المحاولات <b>{guessesRemaining}</b></span>
+                    <Maximize2 size={15} aria-hidden="true" />
+                  </button>
+                ) : (
+                  <p className="referee-clue-empty" data-testid="waiting-clue-label">بانتظار التلميح</p>
+                )}
+              </section>
+
+              <details className="referee-group referee-clue-form">
+                <summary><MessageSquarePlus aria-hidden="true" /><span>إدخال تلميح</span><ChevronDown aria-hidden="true" /></summary>
+                <form onSubmit={handleGiveClue} className="referee-group-body">
+                  <p className="referee-caption">{activeTeamName}</p>
+                  <div className="referee-form-row">
+                    <input type="text" value={clueWord} onChange={(e) => setClueWord(e.target.value)}
+                      placeholder="كلمة التلميح…" aria-label="كلمة التلميح للحكم" />
+                    <select value={String(clueCount)}
+                      onChange={(e) => setClueCount(e.target.value === 'unlimited' ? 'unlimited' : Number(e.target.value))}
+                      aria-label="رقم التلميح للحكم">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n) => (
+                        <option key={n} value={String(n)}>{n}</option>
+                      ))}
+                      <option value="unlimited">∞</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="referee-button referee-button-gold">إعلان التلميح</button>
+                </form>
+              </details>
+
+              <details className="referee-group">
+                <summary><RotateCcw aria-hidden="true" /><span>إدارة الجولة</span><ChevronDown aria-hidden="true" /></summary>
+                <div className="referee-group-body referee-action-list">
+                  <button type="button" className="referee-button referee-button-danger"
+                    onClick={() => onDispatchAction({ action: 'penalty_invalid_clue' })}>
+                    <TriangleAlert /> عقوبة تلميح مخالف
+                  </button>
+                  <button type="button" className="referee-button" onClick={() => onDispatchAction({ action: 'restart_round' })}>
+                    <RotateCcw /> إعادة الجولة نفسها
+                  </button>
+                  <button type="button" className="referee-button" onClick={handleStartNewRound}>
+                    <Plus /> جولة جديدة (برمز جديد)
+                  </button>
+                </div>
+              </details>
+
+              <details className="referee-group" onToggle={(e) => {
+                if (!e.currentTarget.open) setShowPins(false);
+              }}>
+                <summary><ShieldCheck aria-hidden="true" /><span>الربط والأمان</span><ChevronDown aria-hidden="true" /></summary>
+                <div className="referee-group-body referee-action-list">
+                  <button type="button" className="referee-button" onClick={onOpenQrModal}>
+                    <QrCode /> QR القائد
+                  </button>
+                  <button type="button" className="referee-button" aria-expanded={showPins}
+                    onClick={() => setShowPins((value) => !value)}>
+                    {showPins ? <EyeOff /> : <Eye />}
+                    {showPins ? 'إخفاء رموز الدخول' : 'إظهار رموز الدخول'}
+                  </button>
+                  {showPins && (
+                    <dl className="referee-pins" data-testid="referee-pins">
+                      <div><dt>رمز الحكم</dt><dd dir="ltr">{gameState.refereePin || '—'}</dd></div>
+                      <div><dt>رمز القائد</dt><dd dir="ltr">{gameState.spymasterPin || '—'}</dd></div>
+                    </dl>
+                  )}
+                  <button type="button" className="referee-button" onClick={handleRegeneratePin}
+                    title="يلغي جلسات القادة السابقة فورًا ويولد رمزًا جديدًا">
+                    <KeyRound /> تدوير الرمز وإلغاء الجلسات
+                  </button>
+                </div>
+              </details>
+
+              <details className="referee-group">
+                <summary><Monitor aria-hidden="true" /><span>العرض والمؤثرات</span><ChevronDown aria-hidden="true" /></summary>
+                <div className="referee-group-body referee-action-list">
+                  <button type="button" className="referee-button referee-switch"
+                    aria-pressed={gameState.settings.broadcastEffectsEnabled}
+                    onClick={() => onDispatchAction({
+                      action: 'update_settings',
+                      settings: { broadcastEffectsEnabled: !gameState.settings.broadcastEffectsEnabled },
+                    })}>
+                    <Sparkles /> <span>مؤثرات البث</span>
+                    <b>{gameState.settings.broadcastEffectsEnabled ? 'مفعّلة' : 'معطّلة'}</b>
+                  </button>
+                  <button type="button" className="referee-button" onClick={() => onDispatchAction({ action: 'skip_broadcast' })}>
+                    <SkipForward /> تخطي المؤثر الحالي
+                  </button>
+                  <button type="button" className="referee-button referee-switch"
+                    aria-pressed={gameState.settings.allowAudienceClickInLocalMode}
+                    onClick={() => onDispatchAction({
+                      action: 'update_settings',
+                      settings: { allowAudienceClickInLocalMode: !gameState.settings.allowAudienceClickInLocalMode },
+                    })}>
+                    <MousePointer2 /> <span>الكشف من شاشة الجمهور</span>
+                    <b>{gameState.settings.allowAudienceClickInLocalMode ? 'مسموح' : 'الحكم فقط'}</b>
+                  </button>
+                  <button type="button" className="referee-button referee-switch" aria-pressed={showSecretOnRefBoard}
+                    onClick={toggleSecret}>
+                    {showSecretOnRefBoard ? <Eye /> : <EyeOff />} <span>ألوان المفتاح السري</span>
+                    <b>{showSecretOnRefBoard ? 'ظاهرة' : 'مخفية'}</b>
+                  </button>
+                </div>
+              </details>
+
+              <details className="referee-group">
+                <summary><ListChecks aria-hidden="true" /><span>سجل الأحداث</span><ChevronDown aria-hidden="true" /></summary>
+                <ol className="referee-group-body referee-event-log" aria-label="سجل أحداث المباراة">
+                  {gameState.eventLog.map((evt) => (
+                    <li key={evt.id}>
+                      <span>دور {evt.turn}</span>
+                      <span>{evt.message}</span>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            </div>
+          )}
         {/* TAB 2: 6 GAME MODES & WORD PACKS MIXER */}
         {activeRefTab === 'modes' && (
-          <div className="space-y-3 text-xs">
+          <div className="referee-admin space-y-3">
             <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
               <div className="font-extrabold text-amber-200">
                 1. اختر وضع اللعب (6 أوضاع مستقلة):
@@ -709,6 +695,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                     <button
                       key={mKey}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => {
                         setSelectedMode(mKey);
                         setSelectedPacks(m.defaultPacks);
@@ -719,7 +706,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                           : 'bg-stone-900 border-stone-800 text-stone-300 hover:bg-stone-800'
                       }`}
                     >
-                      <div className="font-extrabold text-xs text-amber-300">{m.nameAr}</div>
+                      <div className="font-extrabold text-sm text-amber-300">{m.nameAr}</div>
                       <div className="text-[10px] text-stone-400 mt-0.5">{m.badge}</div>
                     </button>
                   );
@@ -731,7 +718,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                 <span className="font-extrabold text-amber-200">
                   2. خلط حزم الكلمات ({selectedPacks.length} مختارة):
                 </span>
@@ -750,6 +737,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                     <button
                       key={pack.id}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => togglePackSelection(pack.id)}
                       className={`w-full p-2 rounded-xl border text-right flex items-center justify-between gap-2 cursor-pointer ${
                         active
@@ -763,7 +751,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                       </div>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                          active ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-500'
+                          active ? 'bg-amber-500 text-stone-950' : 'bg-stone-800 text-stone-400'
                         }`}
                       >
                         {active ? 'مفعّل ✓' : 'إضافة'}
@@ -786,6 +774,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                     <button
                       key={cat}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => toggleCategorySelection(cat)}
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer border ${
                         active
@@ -803,6 +792,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 <div>
                   <label className="block text-[10px] text-stone-400 mb-1">الفئة العمرية:</label>
                   <select
+                    aria-label="الفئة العمرية"
                     value={ageFilter}
                     onChange={(e) => setAgeFilter(e.target.value as WordAgeGroup | 'any')}
                     className="w-full px-2 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
@@ -816,6 +806,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 <div>
                   <label className="block text-[10px] text-stone-400 mb-1">مستوى الصعوبة:</label>
                   <select
+                    aria-label="مستوى الصعوبة"
                     value={difficultyFilter}
                     onChange={(e) =>
                       setDifficultyFilter(e.target.value as WordDifficulty | 'any')
@@ -841,45 +832,19 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
           </div>
         )}
 
-        {/* TAB 3: COMPACT BOARD FOR MOBILE PHONE REFEREE */}
-        {activeRefTab === 'board' && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-stone-300">
-              <span>انقر على أي بطاقة لكشفها فورًا:</span>
-              <button
-                type="button"
-                onClick={() => setShowSecretOnRefBoard((v) => !v)}
-                className="px-2.5 py-1 rounded bg-stone-800 text-amber-300 font-bold"
-              >
-                {showSecretOnRefBoard ? 'إخفاء المفتاح' : 'إظهار المفتاح'}
-              </button>
-            </div>
-            <div className="h-[430px]">
-              <GameBoard
-                cards={gameState.cards}
-                settings={gameState.settings}
-                gameMode={gameState.gameMode}
-                canClickCards={gameState.status === 'playing'}
-                showSecretKeyOverlay={showSecretOnRefBoard}
-                onCardClick={handleCardRevealByRef}
-                compact={true}
-              />
-            </div>
-          </div>
-        )}
-
         {/* TAB 4: FREE TEAM NAMES & ELITE CLASH PRESETS */}
         {activeRefTab === 'teams' && (
-          <div className="space-y-3 text-xs">
+          <div className="referee-admin space-y-3">
             <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2.5">
               <div className="font-bold text-red-400">
                 ◇ الفريق الأول (الأحمر) — اسم حر أو من فرق النخبة
               </div>
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-3 min-[380px]:grid-cols-6 gap-1.5">
                 {(['A', 'B', 'C', 'D', 'E', 'F'] as EliteTeamCode[]).map((code) => (
                   <button
                     key={code}
                     type="button"
+                    aria-pressed={redCode === code}
                     onClick={() => {
                       setRedCode(code);
                       setCustomRedName(ELITE_CLASH_TEAMS[code].name);
@@ -908,11 +873,12 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               <div className="font-bold text-blue-400">
                 ○ الفريق الثاني (الأزرق) — اسم حر أو من فرق النخبة
               </div>
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-3 min-[380px]:grid-cols-6 gap-1.5">
                 {(['A', 'B', 'C', 'D', 'E', 'F'] as EliteTeamCode[]).map((code) => (
                   <button
                     key={code}
                     type="button"
+                    aria-pressed={blueCode === code}
                     onClick={() => {
                       setBlueCode(code);
                       setCustomBlueName(ELITE_CLASH_TEAMS[code].name);
@@ -942,6 +908,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
+                  aria-pressed={nextStartingTeam === 'random'}
                   onClick={() => setNextStartingTeam('random')}
                   className={`py-1.5 rounded-lg font-bold cursor-pointer ${
                     nextStartingTeam === 'random'
@@ -953,6 +920,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={nextStartingTeam === 'red'}
                   onClick={() => setNextStartingTeam('red')}
                   className={`py-1.5 rounded-lg font-bold cursor-pointer ${
                     nextStartingTeam === 'red'
@@ -964,6 +932,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 </button>
                 <button
                   type="button"
+                  aria-pressed={nextStartingTeam === 'blue'}
                   onClick={() => setNextStartingTeam('blue')}
                   className={`py-1.5 rounded-lg font-bold cursor-pointer ${
                     nextStartingTeam === 'blue'
@@ -997,7 +966,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
 
         {/* TAB 5: WORD LIBRARY REVIEW, IMPORT & DEDUP PANEL */}
         {activeRefTab === 'words' && (
-          <div className="space-y-3 text-xs">
+          <div className="referee-admin space-y-3">
             <div className="p-2.5 rounded-xl bg-stone-950 border border-stone-800 flex items-center justify-between">
               <span>إجمالي الكلمات المعتمدة النشطة:</span>
               <span className="font-mono font-extrabold text-amber-300 text-sm tabular-nums">
@@ -1009,13 +978,14 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               onSubmit={handleAddCustomWords}
               className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                 <span className="font-bold text-amber-200">إضافة كلمات جديدة للبنك</span>
                 <span className="font-mono text-stone-400">
                   المخصصة: {gameState.customWordsCount}
                 </span>
               </div>
               <select
+                aria-label="فئة الكلمات الجديدة"
                 value={customWordCategory}
                 onChange={(e) => setCustomWordCategory(e.target.value as WordCategory)}
                 className="w-full px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
@@ -1046,18 +1016,19 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               <div className="font-bold text-amber-200">
                 مراجعة الكلمات واعتمادها أو استبعادها:
               </div>
-              <div className="flex gap-1.5">
+              <div className="referee-form-row">
                 <input
                   type="text"
                   value={wordSearch}
                   onChange={(e) => setWordSearch(e.target.value)}
                   placeholder="ابحث عن كلمة..."
-                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
+                  className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
                 />
                 <select
+                  aria-label="تصفية الكلمات حسب الفئة"
                   value={wordCategoryFilter}
                   onChange={(e) => setWordCategoryFilter(e.target.value)}
-                  className="w-32 px-2 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
+                  className="w-32 max-w-[48%] px-2 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white text-xs"
                 >
                   <option value="all">كل الفئات</option>
                   {ALL_WORD_CATEGORIES.map((c) => (
@@ -1068,7 +1039,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 </select>
               </div>
 
-              <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+              <div className="max-h-56 overflow-y-auto space-y-1 pe-1">
                 {filteredCatalog.map((w) => {
                   const isDisabled = w.status === 'disabled';
                   return (
@@ -1079,7 +1050,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                       <div>
                         <span
                           className={`font-bold ${
-                            isDisabled ? 'line-through text-stone-500' : 'text-white'
+                            isDisabled ? 'line-through text-stone-400' : 'text-white'
                           }`}
                         >
                           {w.ar}
@@ -1115,6 +1086,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               <input
                 type="file"
                 accept=".json,application/json"
+                aria-label="استيراد كلمات من ملف JSON"
                 onChange={handleJsonFileUpload}
                 className="w-full text-xs text-stone-300 file:ml-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-stone-800 file:text-amber-300 file:font-bold hover:file:bg-stone-700"
               />
@@ -1124,20 +1096,20 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
 
         {/* TAB 6: PERMANENT TOURNAMENT MANAGEMENT, STATS & BACKUP/RESTORE */}
         {activeRefTab === 'tournament' && (
-          <div className="space-y-3 text-xs">
+          <div className="referee-admin space-y-3">
             {/* Create Independent Tournament */}
             <form
               onSubmit={handleCreateTournament}
               className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2"
             >
               <div className="font-bold text-amber-200">إنشاء مسابقة / بطولة مستقلة:</div>
-              <div className="flex gap-1.5">
+              <div className="referee-form-row">
                 <input
                   type="text"
                   value={newTournamentName}
                   onChange={(e) => setNewTournamentName(e.target.value)}
                   placeholder="اسم البطولة (مثال: دوري الأشبال الرمضاني)..."
-                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white"
+                  className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white"
                 />
                 <button
                   type="submit"
@@ -1154,13 +1126,13 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
               className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2"
             >
               <div className="font-bold text-stone-200">إضافة فريق باسم حر للبطولة:</div>
-              <div className="flex gap-1.5">
+              <div className="referee-form-row">
                 <input
                   type="text"
                   value={newFreeTeamName}
                   onChange={(e) => setNewFreeTeamName(e.target.value)}
                   placeholder="اسم الفريق الجديد..."
-                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white"
+                  className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-stone-900 border border-stone-700 text-white"
                 />
                 <button
                   type="submit"
@@ -1173,7 +1145,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
 
             {/* Standings Table */}
             <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                 <span className="font-extrabold text-amber-300">
                   جدول الترتيب والنقاط ({tournamentsList[0]?.name || 'دوري صراع النخبة'})
                 </span>
@@ -1243,6 +1215,7 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
                 <input
                   type="file"
                   accept=".json,application/json"
+                  aria-label="استرجاع بيانات من نسخة احتياطية"
                   onChange={handleRestoreBackupUpload}
                   className="w-full text-xs text-stone-300 file:ml-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-stone-800 file:text-amber-300 file:font-bold"
                 />
@@ -1250,40 +1223,65 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
             </div>
           </div>
         )}
-        </aside>
-      )}
-
-      {/* Left Main Area: Interactive Referee Board */}
-      <div className="flex-1 min-h-[420px] flex flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-stone-900/90 border border-amber-200/15 text-xs">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCollapseSidebar((v) => !v)}
-              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 font-bold cursor-pointer"
-            >
-              {collapseSidebar ? 'إظهار لوحة التحكم ⚙' : 'تكبير اللوحة بالكامل ⛶'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSecretOnRefBoard((v) => !v)}
-              className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold cursor-pointer"
-            >
-              {showSecretOnRefBoard ? 'إخفاء ألوان المفتاح' : 'إظهار ألوان المفتاح'}
-            </button>
-            <span className="text-stone-300 font-semibold hidden sm:inline">
-              انقر على أي بطاقة أدناه لكشفها فورًا ({GAME_MODES_CATALOG[gameState.gameMode]?.nameAr})
-            </span>
-          </div>
-          <span className="font-mono text-amber-300">
-            الدور الحالي:{' '}
-            {gameState.currentTurn === 'red'
-              ? gameState.redTeamName
-              : gameState.blueTeamName}
-          </span>
         </div>
 
-        <div className="flex-1">
+        {activeRefTab === 'controls' && (
+          <div className="referee-quick-actions" aria-label="إجراءات المباراة الأساسية">
+            <button type="button" className="referee-button referee-button-gold"
+              onClick={() => onDispatchAction({ action: 'end_turn' })}
+              disabled={gameState.status !== 'playing'}>
+              <SkipForward /> إنهاء الدور
+            </button>
+            <button type="button" className="referee-button"
+              onClick={() => onDispatchAction({ action: 'undo' })} disabled={!gameState.canUndo}>
+              <Undo2 /> تراجع
+            </button>
+            <button type="button" className="referee-button"
+              onClick={() => onDispatchAction({ action: 'toggle_pause' })}
+              disabled={gameState.status === 'gameover'}>
+              {gameState.status === 'paused' ? <Play /> : <Pause />}
+              {gameState.status === 'paused' ? 'استئناف الجولة' : 'إيقاف مؤقت'}
+            </button>
+            <button type="button" className="referee-button" onClick={expandBoard}>
+              <Maximize2 /> عرض اللوحة كاملة
+            </button>
+          </div>
+        )}
+        <div className="referee-connection" data-connected={wsConnected}>
+          {wsConnected ? <Wifi aria-hidden="true" /> : <WifiOff aria-hidden="true" />}
+          <span role="status">{wsConnected ? 'متصل لحظيًا' : 'جارٍ إعادة الاتصال…'}</span>
+          <span className="referee-room" dir="ltr">{gameState.roomId}</span>
+        </div>
+      </aside>
+
+      <section className="referee-board"
+        aria-labelledby={expandedBoard ? undefined : 'referee-board-title'}
+        aria-label={expandedBoard ? 'عرض اللوحة كاملة' : undefined}>
+        <div className="referee-board-heading">
+          {expandedBoard ? (
+            <button ref={closeBoardRef} type="button" className="referee-button referee-button-gold"
+              onClick={() => setExpandedBoard(false)}>
+              <ArrowRight /> العودة إلى أدوات الحكم
+            </button>
+          ) : (
+            <div>
+              <p className="referee-caption"><bdi>{gameState.gridCols} × {gameState.gridCols}</bdi> · {modeName}</p>
+              <h2 id="referee-board-title">لوحة البطاقات</h2>
+            </div>
+          )}
+          <div className="referee-board-tools">
+            <button type="button" className="referee-button" aria-pressed={showSecretOnRefBoard} onClick={toggleSecret}>
+              {showSecretOnRefBoard ? <EyeOff /> : <Eye />}
+              {showSecretOnRefBoard ? 'إخفاء المفتاح' : 'إظهار المفتاح'}
+            </button>
+            {!expandedBoard && (
+              <button type="button" className="referee-icon-button" onClick={expandBoard}
+                aria-label="عرض اللوحة كاملة" title="عرض اللوحة كاملة"><Maximize2 /></button>
+            )}
+          </div>
+        </div>
+
+        <div className="referee-board-frame">
           <GameBoard
             cards={gameState.cards}
             settings={gameState.settings}
@@ -1293,7 +1291,11 @@ export const RefereeView: React.FC<RefereeViewProps> = ({
             onCardClick={handleCardRevealByRef}
           />
         </div>
-      </div>
+        <div className="referee-board-footer">
+          <span>{gameState.status === 'playing' ? 'انقر على البطاقة لكشفها' : 'كشف البطاقات متوقف'}</span>
+          <span><b>الدور الآن</b> {cooperative ? 'المهمة التعاونية' : activeTeamName}</span>
+        </div>
+      </section>
     </div>
   );
 };

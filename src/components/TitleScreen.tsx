@@ -168,92 +168,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Split Stage: 40%+ Calm Negative Space with SVG Title Lockup + Interactive Tactile Centerpiece */}
+      {/* Main stage: game logo and interactive preview */}
       <div
         className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 max-w-7xl w-full mx-auto my-auto py-4"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTilt({ x: 0, y: 0 })}
       >
-        {/* Right Column (RTL Primary): Bespoke SVG Emblem, Title Lockup & Actions */}
+        {/* Game logo and actions */}
         <div className="lg:col-span-7 flex flex-col items-start text-right space-y-5">
-          {/* Custom Inline SVG Title Lockup & Geometric Emblem */}
-          <div className="w-full max-w-xl" dir="ltr">
-            <svg
-              direction="ltr"
-              viewBox="0 0 620 155"
-              className="w-full h-auto drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
-              role="img"
-              aria-label="CODE NAMES — ELITE CLASH"
-            >
-              {/* Diegetic Board Plaque Frame */}
-              <rect
-                x="4"
-                y="8"
-                width="612"
-                height="138"
-                rx="16"
-                fill="#1E1B18"
-                stroke="#D6C5A9"
-                strokeWidth="2"
-                strokeOpacity="0.35"
-              />
-              {/* Red & Blue Team Corner Accents */}
-              <path d="M20 8 H160 L145 16 H20 Z" fill="#DC2626" />
-              <path d="M460 8 H600 L600 16 H475 Z" fill="#2563EB" />
-              <path d="M20 146 H145 L160 138 H20 Z" fill="#2563EB" />
-              <path d="M475 146 H600 L600 138 H460 Z" fill="#DC2626" />
-
-              {/* Geometric Key-Card Crest on Right Side */}
-              <g transform="translate(505, 33)">
-                <rect x="0" y="0" width="88" height="88" rx="12" fill="#F7F3E8" stroke="#A89984" strokeWidth="2" />
-                <rect x="8" y="8" width="20" height="20" rx="4" fill="#DC2626" />
-                <rect x="34" y="8" width="20" height="20" rx="4" fill="#2563EB" />
-                <rect x="60" y="8" width="20" height="20" rx="4" fill="#D6CBB5" />
-                <rect x="8" y="34" width="20" height="20" rx="4" fill="#2563EB" />
-                <rect x="34" y="34" width="20" height="20" rx="4" fill="#18181B" />
-                <rect x="60" y="34" width="20" height="20" rx="4" fill="#DC2626" />
-                <rect x="8" y="60" width="20" height="20" rx="4" fill="#D6CBB5" />
-                <rect x="34" y="60" width="20" height="20" rx="4" fill="#DC2626" />
-                <rect x="60" y="60" width="20" height="20" rx="4" fill="#2563EB" />
-              </g>
-
-              {/* Main Display Title Typography Centered in Plaque Left/Middle Area */}
-              <text
-                x="255"
-                y="64"
-                textAnchor="middle"
-                fill="#FBF8F1"
-                fontFamily="Changa, Cairo, sans-serif"
-                fontWeight="800"
-                fontSize="44"
-                letterSpacing="2"
-              >
-                CODE NAMES
-              </text>
-              <text
-                x="255"
-                y="102"
-                textAnchor="middle"
-                fill="#F59E0B"
-                fontFamily="Cairo, sans-serif"
-                fontWeight="800"
-                fontSize="23"
-              >
-                ELITE CLASH — دوري صراع النخبة
-              </text>
-              <text
-                x="255"
-                y="129"
-                textAnchor="middle"
-                fill="#A8A29E"
-                fontFamily="Cairo, sans-serif"
-                fontWeight="600"
-                fontSize="14"
-              >
-                مسجد ابن تيمية · منصة المسابقات العربية لجميع الأعمار
-              </text>
-            </svg>
-          </div>
+          <img
+            src="/codenames-logo.svg"
+            alt="CODE NAMES"
+            width={500}
+            height={112}
+            className="w-full max-w-xl h-auto drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+          />
 
           <p className="text-stone-300 text-base md:text-lg max-w-xl leading-relaxed">
             منصة المسابقات الذهنية المتكاملة لـ 6 أنماط لعب رسمية (الكلاسيكي، السريع 4×4، الناشئين بالرسوم، العائلي، التعاوني، ونظام البطولات) مع أكثر من 600 كلمة عربية محكمة في 8 حزم متخصصة.

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 112" role="img" aria-labelledby="title">
+  <title id="title">CODE NAMES</title>
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop stop-color="#fff1bc"/>
+      <stop offset="1" stop-color="#ce9140"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Three cards, with the clue marked on the top card. -->
+  <rect x="15" y="26" width="56" height="69" rx="9" fill="#94343e"
+        stroke="#ea7076" stroke-width="2" transform="rotate(-17 43 60)"/>
+  <rect x="44" y="26" width="56" height="69" rx="9" fill="#284f8b"
+        stroke="#76adf6" stroke-width="2" transform="rotate(17 72 60)"/>
+  <rect x="29" y="12" width="56" height="76" rx="9" fill="#211c19"
+        stroke="url(#gold)" stroke-width="2.5"/>
+  <path d="M57 27 71 41 57 55 43 41Z" fill="url(#gold)"/>
+  <path d="M57 36 62 41 57 46 52 41Z" fill="#211c19"/>
+  <path d="M44 67h26m-20 7h14" fill="none" stroke="#f1d598"
+        stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Custom letter shapes render independently of installed fonts. -->
+  <g fill="#f9f4e9">
+    <path d="M129 31h25l5 5v6h-22v24h22v6l-5 5h-25l-6-6V37Z"/>
+    <path fill-rule="evenodd" d="M172 31h26l6 6v34l-6 6h-26l-6-6V37Zm7 11v24h12V42Z"/>
+    <path fill-rule="evenodd" d="M213 31h24l14 12v22l-14 12h-24Zm13 11v24h6l6-6V48l-6-6Z"/>
+    <path d="M260 31h34v11h-21v6h17v11h-17v7h21v11h-34Z"/>
+  </g>
+  <g fill="url(#gold)" transform="translate(313 0) scale(.81 1)">
+    <path d="M0 31h12l16 24V31h13v46H29L13 53v24H0Z"/>
+    <path fill-rule="evenodd" d="M62 31h15l16 46H79l-3-10H62l-3 10H46Zm7 14-4 12h8Z"/>
+    <path d="M98 31h12l12 20 12-20h12v46h-13V54l-11 16-11-16v23H98Z"/>
+    <path d="M154 31h32v11h-19v6h16v11h-16v7h19v11h-32Z"/>
+    <path d="M199 31h15l5 5v6h-17v6h12l6 6v17l-6 6h-20l-5-5v-6h18v-7h-12l-6-6V37Z"/>
+  </g>
+  <path d="M125 89h25m8 0h333" stroke="#daa453" stroke-opacity=".52" stroke-width="1.5"/>
+</svg>

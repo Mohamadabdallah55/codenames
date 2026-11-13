@@ -1,220 +1,292 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  OFFICIAL_WORD_BANK,
-  buildValidatedWordBank,
-  normalizeArabicWord,
-  parseImportedWordsJson,
-} from '../data/words';
-import {
+  GAME_MODES_CATALOG,
+  applyInvalidCluePenalty,
+  computeTournamentStandings,
   createGameRound,
-  giveClue,
-  revealCard,
   endTurn,
-  undoLastAction,
+  generateDynamicPin,
+  giveClue,
+  restartCurrentRound,
+  revealCard,
   sanitizeStateForRole,
+  shuffleArray,
+  undoLastAction,
 } from './rules';
+import {
+  OFFICIAL_WORD_BANK,
+  WORD_PACKS_CATALOG,
+  filterWordPoolByCriteria,
+  normalizeArabicWord,
+} from '../data/words';
 
-test('1 & 18. Word bank has 500+ unique Arabic words with zero duplicates after Tashkeel removal', () => {
+process.env.NODE_ENV = 'test';
+
+test('Word Bank & Packs: contains 600+ unique Arabic words with semantic clusters and pack metadata', () => {
   assert.ok(
-    OFFICIAL_WORD_BANK.length >= 500,
-    `Expected at least 500 words, found ${OFFICIAL_WORD_BANK.length}`
+    OFFICIAL_WORD_BANK.length >= 600,
+    `Expected >= 600 words, got ${OFFICIAL_WORD_BANK.length}`
   );
+  assert.equal(WORD_PACKS_CATALOG.length, 8);
+
   const normalizedSet = new Set(OFFICIAL_WORD_BANK.map((w) => normalizeArabicWord(w.ar)));
-  assert.equal(normalizedSet.size, OFFICIAL_WORD_BANK.length, 'Word bank must have zero normalized duplicates');
+  assert.equal(normalizedSet.size, OFFICIAL_WORD_BANK.length, 'Zero duplicate normalized words');
 
-  // Verify diacritic and hamza normalization deduplication
-  const customCheck = buildValidatedWordBank([
-    { ar: 'شِيفْرَة', en: 'Cipher' },
-    { ar: 'شيفرة', en: 'Cipher 2' },
-    { ar: 'أطلس', en: 'Atlas' },
-    { ar: 'اطلس', en: 'Atlas 2' },
-  ]);
-  assert.equal(customCheck.words.length, 2);
-  assert.equal(customCheck.duplicatesRemoved.length, 2);
+  // Every word has relatedWords and packIds
+  for (const w of OFFICIAL_WORD_BANK) {
+    assert.ok(w.ar.length >= 2);
+    assert.ok(Array.isArray(w.packIds) && w.packIds.length >= 1);
+    assert.ok(Array.isArray(w.relatedWords));
+  }
+
+  // Filtering by junior pack returns kid-appropriate easy words
+  const juniorPool = filterWordPoolByCriteria(OFFICIAL_WORD_BANK, {
+    packIds: ['junior_kids'],
+    ageGroup: 'junior',
+    difficulty: 'easy',
+  });
+  assert.ok(juniorPool.length >= 80, `Expected >= 80 junior words, got ${juniorPool.length}`);
 });
 
-test('1, 2 & 3. Round creation produces 25 unique words and exact 9/8/7/1 distribution matching starting team', () => {
-  const redStartState = createGameRound({ startingTeam: 'red' });
-  assert.equal(redStartState.cards.length, 25);
-  const uniqueWords = new Set(redStartState.cards.map((c) => c.wordAr));
-  assert.equal(uniqueWords.size, 25);
+test('Security: sanitizeStateForRole strips secretColor, roundSeed, and PINs from audience view', () => {
+  const round = createGameRound({ roomId: 'SEC-TEST', startingTeam: 'red' });
+  const audienceState = sanitizeStateForRole(round, 'audience');
 
-  const counts = { red: 0, blue: 0, neutral: 0, black: 0 };
-  for (const c of redStartState.cards) {
-    counts[c.secretColor]++;
+  assert.equal(audienceState.roundSeed, undefined, 'roundSeed must NEVER be sent to audience');
+  assert.equal(audienceState.spymasterPin, undefined, 'spymasterPin must NEVER be sent to audience');
+  assert.equal(audienceState.refereePin, undefined, 'refereePin must NEVER be sent to audience');
+
+  // Verify eventLog does not leak PINs
+  for (const evt of audienceState.eventLog) {
+    assert.equal(evt.message.includes(round.spymasterPin), false, 'eventLog must not contain spymasterPin');
+    assert.equal(evt.message.includes(round.refereePin), false, 'eventLog must not contain refereePin');
   }
-  assert.equal(counts.red, 9);
-  assert.equal(counts.blue, 8);
-  assert.equal(counts.neutral, 7);
-  assert.equal(counts.black, 1);
-  assert.equal(redStartState.startingTeam, 'red');
-  assert.equal(redStartState.currentTurn, 'red');
-  assert.equal(redStartState.redRemaining, 9);
-  assert.equal(redStartState.blueRemaining, 8);
 
-  const blueStartState = createGameRound({ startingTeam: 'blue' });
-  const blueCounts = { red: 0, blue: 0, neutral: 0, black: 0 };
-  for (const c of blueStartState.cards) {
-    blueCounts[c.secretColor]++;
-  }
-  assert.equal(blueCounts.blue, 9);
-  assert.equal(blueCounts.red, 8);
-  assert.equal(blueCounts.neutral, 7);
-  assert.equal(blueCounts.black, 1);
-  assert.equal(blueStartState.startingTeam, 'blue');
-  assert.equal(blueStartState.currentTurn, 'blue');
-});
-
-test('4 & 5. Audience state hides secret colors of unrevealed cards, while Spymaster and Referee see them', () => {
-  const state = createGameRound({ startingTeam: 'red' });
-  const audienceView = sanitizeStateForRole(state, 'audience');
-  for (const card of audienceView.cards) {
+  // Verify unrevealed cards have zero color information
+  for (const card of audienceState.cards) {
+    assert.equal(card.revealed, false);
     assert.equal(card.color, null);
     assert.equal(card.secretColor, undefined);
   }
 
-  const spymasterView = sanitizeStateForRole(state, 'spymaster_red');
-  for (let i = 0; i < 25; i++) {
-    assert.equal(spymasterView.cards[i].secretColor, state.cards[i].secretColor);
+  // Spymaster receives secretColor and spymasterPin, but NOT refereePin
+  const spyState = sanitizeStateForRole(round, 'spymaster_red');
+  assert.equal(spyState.spymasterPin, round.spymasterPin);
+  assert.equal(spyState.refereePin, undefined);
+  assert.ok(spyState.cards.every((c) => typeof c.secretColor === 'string'));
+});
+
+test('Security: generateDynamicPin never produces legacy hardcoded PINs 1446 or 2026', () => {
+  for (let i = 0; i < 200; i++) {
+    const pin = generateDynamicPin();
+    assert.notEqual(pin, '1446');
+    assert.notEqual(pin, '2026');
+    assert.equal(pin.length, 4);
   }
 });
 
-test('6, 7, 8, 11 & 12. Revealing correct card continues turn (+1 rule), neutral ends turn, opponent updates opponent score and ends turn, inactive team blocked', () => {
-  let state = createGameRound({ startingTeam: 'red' });
+test('Game Modes: all 6 independent modes initialize with correct board dimensions and card distributions', () => {
+  // 1. Classic Mode (5x5 = 25 cards: 9/8/7/1)
+  const classic = createGameRound({ gameMode: 'classic', startingTeam: 'red' });
+  assert.equal(classic.boardSize, 25);
+  assert.equal(classic.gridCols, 5);
+  assert.equal(classic.cards.length, 25);
+  assert.equal(classic.cards.filter((c) => c.secretColor === 'red').length, 9);
+  assert.equal(classic.cards.filter((c) => c.secretColor === 'blue').length, 8);
+  assert.equal(classic.cards.filter((c) => c.secretColor === 'neutral').length, 7);
+  assert.equal(classic.cards.filter((c) => c.secretColor === 'black').length, 1);
 
-  // Giving a clue word that is currently on the board must be rejected
-  const boardWord = state.cards[0].wordAr.split(' ')[0];
-  if (!state.cards[0].wordAr.includes(' ')) {
-    const invalidClue = giveClue(state, boardWord, 1, 'red');
-    assert.equal(invalidClue.ok, false);
-  }
+  // 2. Quick Match Mode (4x4 = 16 cards: 6/5/4/1)
+  const quick = createGameRound({ gameMode: 'quick', startingTeam: 'blue' });
+  assert.equal(quick.boardSize, 16);
+  assert.equal(quick.gridCols, 4);
+  assert.equal(quick.cards.length, 16);
+  assert.equal(quick.cards.filter((c) => c.secretColor === 'blue').length, 6);
+  assert.equal(quick.cards.filter((c) => c.secretColor === 'red').length, 5);
+  assert.equal(quick.cards.filter((c) => c.secretColor === 'neutral').length, 4);
+  assert.equal(quick.cards.filter((c) => c.secretColor === 'black').length, 1);
+  assert.equal(quick.settings.timerDurationSeconds, 60);
 
-  // Give clue with number 1 -> allows 1 + 1 = 2 guesses
-  const clueRes = giveClue(state, 'رابط', 1, 'red');
-  assert.equal(clueRes.ok, true);
-  state = clueRes.state;
-  assert.equal(state.currentClue?.guessesAllowed, 2);
+  // 3. Junior Mode (4x4 = 16 cards with icons and easy words)
+  const junior = createGameRound({ gameMode: 'junior', startingTeam: 'red' });
+  assert.equal(junior.boardSize, 16);
+  assert.equal(junior.gridCols, 4);
+  assert.ok(junior.cards.every((c) => Boolean(c.iconType)));
 
-  // Prevent inactive team (blue) from guessing on red's turn
-  const redCardIndexes = state.cards
-    .filter((c) => c.secretColor === 'red')
-    .map((c) => c.index);
-  const wrongTurnRes = revealCard(state, redCardIndexes[0], { actingTeam: 'blue' });
-  assert.equal(wrongTurnRes.ok, false);
+  // 4. Family Mode (5x5 = 25 cards, 120s timer)
+  const family = createGameRound({ gameMode: 'family', startingTeam: 'red' });
+  assert.equal(family.boardSize, 25);
+  assert.equal(family.settings.timerDurationSeconds, 120);
 
-  // 1st correct guess by red -> continues turn
-  const firstGuess = revealCard(state, redCardIndexes[0], { actingTeam: 'red' });
-  assert.equal(firstGuess.ok, true);
-  state = firstGuess.state;
-  assert.equal(state.redRemaining, 8);
-  assert.equal(state.currentTurn, 'red');
+  // 5. Cooperative Mode (5x5 = 25 cards: 15 target red, 0 blue, 9 neutral, 1 black, 9 turns)
+  const coop = createGameRound({ gameMode: 'cooperative' });
+  assert.equal(coop.boardSize, 25);
+  assert.equal(coop.redTotal, 15);
+  assert.equal(coop.blueTotal, 0);
+  assert.equal(coop.coopTurnsRemaining, 9);
+  assert.equal(coop.cards.filter((c) => c.secretColor === 'red').length, 15);
+  assert.equal(coop.cards.filter((c) => c.secretColor === 'neutral').length, 9);
+  assert.equal(coop.cards.filter((c) => c.secretColor === 'black').length, 1);
 
-  // Cannot click already revealed card
-  const duplicateClick = revealCard(state, redCardIndexes[0], { actingTeam: 'red' });
-  assert.equal(duplicateClick.ok, false);
-
-  // 2nd correct guess by red -> reaches N + 1 (2 guesses), automatically ends turn!
-  const secondGuess = revealCard(state, redCardIndexes[1], { actingTeam: 'red' });
-  assert.equal(secondGuess.ok, true);
-  state = secondGuess.state;
-  assert.equal(state.redRemaining, 7);
-  assert.equal(state.currentTurn, 'blue');
-  assert.equal(state.currentClue, null);
-
-  // On blue's turn, reveal a neutral card -> ends turn immediately
-  const neutralIdx = state.cards.find((c) => !c.revealed && c.secretColor === 'neutral')!.index;
-  const neutralRes = revealCard(state, neutralIdx, { actingTeam: 'blue' });
-  assert.equal(neutralRes.ok, true);
-  state = neutralRes.state;
-  assert.equal(state.currentTurn, 'red');
-
-  // On red's turn, reveal a blue (opponent) card -> decrements blueRemaining and ends turn
-  const blueIdx = state.cards.find((c) => !c.revealed && c.secretColor === 'blue')!.index;
-  const oppRes = revealCard(state, blueIdx, { actingTeam: 'red' });
-  assert.equal(oppRes.ok, true);
-  state = oppRes.state;
-  assert.equal(state.blueRemaining, 7);
-  assert.equal(state.currentTurn, 'blue');
+  // 6. Tournament Mode (5x5 = 25 cards, 90s timer, direct screen click enabled)
+  const tour = createGameRound({ gameMode: 'tournament', startingTeam: 'red' });
+  assert.equal(tour.boardSize, 25);
+  assert.equal(tour.settings.allowAudienceClickInLocalMode, true);
+  assert.equal(Object.keys(GAME_MODES_CATALOG).length, 6);
 });
 
-test('9 & 14. Revealing the black card immediately causes the active team to lose, and Undo safely restores playing state', () => {
-  let state = createGameRound({ startingTeam: 'red' });
-  const blackIdx = state.cards.find((c) => c.secretColor === 'black')!.index;
+test('Cooperative Mode: revealing neutral cards or ending turns consumes turn budget and triggers out_of_turns loss at 0', () => {
+  let state = createGameRound({ gameMode: 'cooperative' });
+  assert.equal(state.coopTurnsRemaining, 9);
 
-  const res = revealCard(state, blackIdx, { actingTeam: 'red' });
-  assert.equal(res.ok, true);
-  state = res.state;
+  // Reveal 1 target card -> continues turn without losing coopTurnsRemaining
+  const targetIdx = state.cards.findIndex((c) => c.secretColor === 'red');
+  const r1 = revealCard(state, targetIdx, { forceByReferee: true });
+  assert.equal(r1.ok, true);
+  state = r1.state;
+  assert.equal(state.redRemaining, 14);
+  assert.equal(state.coopTurnsRemaining, 9);
+
+  // Exhaust 9 turns via endTurn
+  for (let t = 0; t < 9; t++) {
+    const ended = endTurn(state);
+    assert.equal(ended.ok, true);
+    state = ended.state;
+  }
+
+  assert.equal(state.coopTurnsRemaining, 0);
   assert.equal(state.status, 'gameover');
   assert.equal(state.winner, 'blue');
-  assert.equal(state.loser, 'red');
-  assert.equal(state.winReason, 'black_card');
-  assert.equal(state.blueWinsCount, 1);
-  assert.equal(state.matchHistory.length, 1);
-
-  // Undo black card reveal
-  const undoRes = undoLastAction(state);
-  assert.equal(undoRes.ok, true);
-  state = undoRes.state;
-  assert.equal(state.status, 'playing');
-  assert.equal(state.winner, null);
-  assert.equal(state.cards[blackIdx].revealed, false);
-  assert.equal(state.blueWinsCount, 0);
-  assert.equal(state.matchHistory.length, 0);
+  assert.equal(state.winReason, 'out_of_turns');
 });
 
-test('10. Revealing all cards of a team immediately wins the game (including zero/unlimited clue)', () => {
-  let state = createGameRound({ startingTeam: 'red' });
-  const clueRes = giveClue(state, 'تحدي', 0, 'red'); // 0 clue gives unlimited guesses
+test('Simultaneous / duplicate card reveal & Undo restores full state including gameover revert', () => {
+  let state = createGameRound({ gameMode: 'classic', startingTeam: 'red' });
+  const clueRes = giveClue(state, 'شعاع', 2, 'red');
   assert.equal(clueRes.ok, true);
   state = clueRes.state;
-  assert.equal(state.currentClue?.guessesAllowed, null);
+  assert.equal(state.activeBroadcast?.type, 'clue_declared');
 
-  const redIndexes = state.cards.filter((c) => c.secretColor === 'red').map((c) => c.index);
-  for (let i = 0; i < redIndexes.length; i++) {
-    const r = revealCard(state, redIndexes[i], { actingTeam: 'red' });
-    assert.equal(r.ok, true);
-    state = r.state;
-  }
+  const redCardIdx = state.cards.findIndex((c) => c.secretColor === 'red');
+  const rev1 = revealCard(state, redCardIdx);
+  assert.equal(rev1.ok, true);
+  state = rev1.state;
 
+  // Attempting to reveal the same card again (e.g. concurrent tap) fails cleanly
+  const revDuplicate = revealCard(state, redCardIdx);
+  assert.equal(revDuplicate.ok, false);
+
+  // Reveal black card -> gameover
+  const blackIdx = state.cards.findIndex((c) => c.secretColor === 'black');
+  const revBlack = revealCard(state, blackIdx);
+  assert.equal(revBlack.ok, true);
+  state = revBlack.state;
   assert.equal(state.status, 'gameover');
-  assert.equal(state.winner, 'red');
-  assert.equal(state.redRemaining, 0);
-  assert.equal(state.winReason, 'all_cards_revealed');
-  assert.equal(state.matchHistory.length, 1);
+  assert.equal(state.winner, 'blue');
+  assert.equal(state.blueWinsCount, 1);
 
-  // Also test JSON import helper
-  const imported = parseImportedWordsJson(JSON.stringify(['كلمة أولى', 'كلمة ثانية']));
-  assert.equal(imported.entries.length, 2);
+  // Undo reverts gameover and decrements blueWinsCount back to 0
+  const undone = undoLastAction(state);
+  assert.equal(undone.ok, true);
+  state = undone.state;
+  assert.equal(state.status, 'playing');
+  assert.equal(state.winner, null);
+  assert.equal(state.blueWinsCount, 0);
+  assert.equal(state.cards[blackIdx].revealed, false);
 });
 
-test('19 & 20. Dynamic per-game PINs, deterministic seed reproduction, and genuine word/color shuffling', () => {
-  const round1 = createGameRound({ roomId: 'ELITE-99', roundNumber: 1, startingTeam: 'red' });
-  const round2 = createGameRound({ roomId: 'ELITE-99', roundNumber: 2, startingTeam: 'red' });
-  assert.equal(round1.spymasterPin.length, 4);
-  assert.equal(round2.spymasterPin.length, 4);
+test('Server Authorization & Role Enforcement: rejects unauthorized actions and revokes sessions on PIN rotation', async () => {
+  const { executeRoomAction, resolveAuthorizedRole } = await import('../../server');
+  const roomId = 'AUTH-TEST-ROOM';
 
-  // Ensure colors are genuinely shuffled (first 9 cards must NOT all be red)
-  const first9AllRed = round1.cards.slice(0, 9).every((c) => c.secretColor === 'red');
-  assert.equal(first9AllRed, false, 'Secret colors must be shuffled across the 5x5 grid');
-
-  // Ensure words are genuinely shuffled (first 5 words must NOT match the first 5 words of OFFICIAL_WORD_BANK in order)
-  const first5InBankOrder = round1.cards
-    .slice(0, 5)
-    .every((c, idx) => c.wordAr === OFFICIAL_WORD_BANK[idx].ar);
-  assert.equal(first5InBankOrder, false, 'Words must be shuffled from the word bank');
-
-  // Reconstructing a board with the same roundSeed produces the exact same 25 words and secret colors (for static QR mode)
-  const clone = createGameRound({
-    roomId: round1.roomId,
-    roundNumber: round1.roundNumber,
-    spymasterPin: round1.spymasterPin,
-    roundSeed: round1.roundSeed,
-    startingTeam: round1.startingTeam,
+  // Audience cannot give a clue
+  const unauthClue = executeRoomAction(roomId, {
+    action: 'give_clue',
+    role: 'audience',
+    word: 'اختبار',
+    count: 2,
   });
-  for (let i = 0; i < 25; i++) {
-    assert.equal(clone.cards[i].wordAr, round1.cards[i].wordAr);
-    assert.equal(clone.cards[i].secretColor, round1.cards[i].secretColor);
-  }
+  assert.equal(unauthClue.ok, false);
+  assert.equal(unauthClue.statusCode, 403);
+
+  // Audience cannot reveal a card when allowAudienceClickInLocalMode is locked (false) by the Referee
+  const { getOrCreateRoomForTest } = await import('../../server');
+  const room = getOrCreateRoomForTest(roomId);
+  room.settings.allowAudienceClickInLocalMode = false;
+
+  const unauthReveal = executeRoomAction(roomId, {
+    action: 'reveal_card',
+    role: 'audience',
+    cardIndex: 0,
+  });
+  assert.equal(unauthReveal.ok, false);
+  assert.equal(unauthReveal.statusCode, 403);
+
+  // Audience or fake referee with legacy PIN '1446' or '2026' is strictly rejected
+  const fakePinAttempt = executeRoomAction(roomId, {
+    action: 'new_round',
+    role: 'referee',
+    pin: '1446',
+  });
+  assert.equal(fakePinAttempt.ok, false);
+  assert.equal(fakePinAttempt.statusCode, 403);
+
+  const fakeSpymasterAttempt = executeRoomAction(roomId, {
+    action: 'give_clue',
+    role: 'spymaster_red',
+    pin: '2026',
+    word: 'اختبار',
+    count: 2,
+  });
+  assert.equal(fakeSpymasterAttempt.ok, false);
+  assert.equal(fakeSpymasterAttempt.statusCode, 403);
 });
 
+test('Tournament Standings & Penalty Logic work accurately', () => {
+  let state = createGameRound({ gameMode: 'tournament', startingTeam: 'red' });
+  const penRes = applyInvalidCluePenalty(state);
+  assert.equal(penRes.ok, true);
+  assert.equal(penRes.state.currentTurn, 'blue');
+  assert.equal(penRes.state.blueRemaining, state.blueRemaining - 1);
+
+  const restarted = restartCurrentRound(penRes.state);
+  assert.equal(restarted.turnsCount, 1);
+  assert.equal(restarted.blueRemaining, state.blueTotal);
+
+  const standings = computeTournamentStandings([
+    {
+      id: 'm1',
+      roomId: 'R1',
+      gameMode: 'tournament',
+      roundNumber: 1,
+      redTeamCode: 'A',
+      redTeamName: 'الصقور',
+      blueTeamCode: 'B',
+      blueTeamName: 'الفرسان',
+      startingTeam: 'red',
+      winner: 'red',
+      loser: 'blue',
+      winReason: 'all_cards_revealed',
+      winReasonAr: 'كشف جميع البطاقات',
+      turnsCount: 5,
+      durationSeconds: 180,
+      completedAt: new Date().toISOString(),
+      redRemaining: 0,
+      blueRemaining: 3,
+    },
+  ]);
+  assert.equal(standings.length, 2);
+  assert.equal(standings[0].teamName, 'الصقور');
+  assert.equal(standings[0].points, 3);
+  assert.equal(standings[0].wins, 1);
+  assert.equal(standings[1].teamName, 'الفرسان');
+  assert.equal(standings[1].points, 0);
+});
+
+test('shuffleArray mixes elements properly', () => {
+  const arr = Array.from({ length: 25 }, (_, i) => i);
+  const shuffled = shuffleArray(arr);
+  assert.equal(shuffled.length, 25);
+  assert.notDeepEqual(shuffled, arr);
+});

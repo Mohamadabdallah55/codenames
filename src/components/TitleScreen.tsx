@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { ClientRole } from '../game/rules';
+import { GAME_MODES_CATALOG, GameMode } from '../game/rules';
 
 interface TitleScreenProps {
   roomId: string;
+  activeMode?: GameMode;
   onChangeRoomId: (roomId: string) => void;
   onStartAudience: () => void;
-  onRequestProtectedRole: (role: 'spymaster_red' | 'spymaster_blue' | 'referee', pin: string) => Promise<{ ok: boolean; error?: string }>;
+  onRequestProtectedRole: (
+    role: 'spymaster_red' | 'spymaster_blue' | 'referee',
+    pin: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  onClaimOrganizer: () => Promise<{
+    ok: boolean;
+    refereePin?: string;
+    spymasterPin?: string;
+    error?: string;
+  }>;
 }
 
 const PREVIEW_CARDS = [
@@ -22,16 +32,21 @@ const PREVIEW_CARDS = [
 
 export const TitleScreen: React.FC<TitleScreenProps> = ({
   roomId,
+  activeMode = 'classic',
   onChangeRoomId,
   onStartAudience,
   onRequestProtectedRole,
+  onClaimOrganizer,
 }) => {
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [flippedPreview, setFlippedPreview] = useState<Record<number, boolean>>({});
-  const [authModalRole, setAuthModalRole] = useState<'spymaster_red' | 'spymaster_blue' | 'referee' | null>(null);
+  const [authModalRole, setAuthModalRole] = useState<
+    'spymaster_red' | 'spymaster_blue' | 'referee' | null
+  >(null);
   const [pinInput, setPinInput] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [claimingOrganizer, setClaimingOrganizer] = useState(false);
 
   // Listen for Enter or Space on title screen when no modal/input is focused
   useEffect(() => {
@@ -58,12 +73,40 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     setTilt({ x: nx * 10, y: -ny * 10 });
   };
 
+  const handleClaimOrganizerClick = async () => {
+    setClaimingOrganizer(true);
+    setAuthError(null);
+    const res = await onClaimOrganizer();
+    if (!res.ok) {
+      setClaimingOrganizer(false);
+      setAuthError(
+        res.error ||
+          'تعذر تفعيل صلاحية الحكم. اضغط «غرفة جديدة» أو أعد المحاولة.'
+      );
+      return;
+    }
+    // If user wanted Captain view, switch directly into Captain view using the newly issued spymasterPin
+    if (
+      (authModalRole === 'spymaster_red' || authModalRole === 'spymaster_blue') &&
+      res.spymasterPin
+    ) {
+      await onRequestProtectedRole(authModalRole, res.spymasterPin);
+    }
+    setClaimingOrganizer(false);
+    setAuthModalRole(null);
+    setPinInput('');
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authModalRole) return;
+    if (!pinInput.trim()) {
+      await handleClaimOrganizerClick();
+      return;
+    }
     setSubmitting(true);
     setAuthError(null);
-    const res = await onRequestProtectedRole(authModalRole, pinInput);
+    const res = await onRequestProtectedRole(authModalRole, pinInput.trim());
     setSubmitting(false);
     if (!res.ok) {
       setAuthError(res.error || 'رمز الدخول غير صحيح.');
@@ -73,11 +116,21 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     }
   };
 
-  const openAuthModal = (role: 'spymaster_red' | 'spymaster_blue' | 'referee', defaultPinHint: string) => {
-    setAuthModalRole(role);
-    setPinInput(defaultPinHint);
+  const handleCreateFreshRoom = () => {
+    const suffix = Math.floor(10 + Math.random() * 89);
+    const nextRoom = `ELITE-${suffix}`;
+    onChangeRoomId(nextRoom);
     setAuthError(null);
   };
+
+  const openAuthModal = (role: 'spymaster_red' | 'spymaster_blue' | 'referee') => {
+    setAuthModalRole(role);
+    setPinInput('');
+    setAuthError(null);
+  };
+
+  const currentModeMeta =
+    GAME_MODES_CATALOG[activeMode] || GAME_MODES_CATALOG.classic;
 
   return (
     <main className="relative w-screen h-screen overflow-hidden tabletop-felt flex flex-col justify-between p-6 md:p-10 select-none">
@@ -122,7 +175,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         onMouseLeave={() => setTilt({ x: 0, y: 0 })}
       >
         {/* Right Column (RTL Primary): Bespoke SVG Emblem, Title Lockup & Actions */}
-        <div className="lg:col-span-7 flex flex-col items-start text-right space-y-6">
+        <div className="lg:col-span-7 flex flex-col items-start text-right space-y-5">
           {/* Custom Inline SVG Title Lockup & Geometric Emblem */}
           <div className="w-full max-w-xl" dir="ltr">
             <svg
@@ -197,17 +250,25 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 fontWeight="600"
                 fontSize="14"
               >
-                مسجد ابن تيمية · التحدي الذهني الجماعي للفرق (A — F)
+                مسجد ابن تيمية · منصة المسابقات العربية لجميع الأعمار
               </text>
             </svg>
           </div>
 
           <p className="text-stone-300 text-base md:text-lg max-w-xl leading-relaxed">
-            شبكة من 25 كلمة عربية أصيلة، فريقان متنافسان (الأحمر والأزرق)، وقائدان يملكان المفتاح السري. اربط الكلمات بتلميح ذكي من كلمة واحدة ورقم، واحذر من البطاقة السوداء القاتلة.
+            منصة المسابقات الذهنية المتكاملة لـ 6 أنماط لعب رسمية (الكلاسيكي، السريع 4×4، الناشئين بالرسوم، العائلي، التعاوني، ونظام البطولات) مع أكثر من 600 كلمة عربية محكمة في 8 حزم متخصصة.
           </p>
 
+          {/* Active Game Mode Summary Pill */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-amber-200/90 bg-stone-900/85 border border-amber-300/20 rounded-xl px-3.5 py-2">
+            <span className="font-extrabold text-amber-400">الطور النشط في الغرفة:</span>
+            <span className="font-bold text-white">{currentModeMeta.nameAr}</span>
+            <span aria-hidden="true">·</span>
+            <span className="font-mono text-stone-300">{currentModeMeta.badge}</span>
+          </div>
+
           {/* Primary Start CTA & Role Actions (<= 3 Menu Actions) */}
-          <div className="flex flex-wrap items-center gap-3.5 pt-2">
+          <div className="flex flex-wrap items-center gap-3.5 pt-1">
             <button
               type="button"
               data-start="true"
@@ -222,7 +283,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
             <button
               type="button"
-              onClick={() => openAuthModal('spymaster_red', '2026')}
+              data-testid="open-spymaster-auth-btn"
+              onClick={() => openAuthModal('spymaster_red')}
               className="px-5 py-3.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-100 border border-amber-200/20 font-bold text-sm md:text-base transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               دخول القائد (المفتاح السري)
@@ -230,7 +292,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
             <button
               type="button"
-              onClick={() => openAuthModal('referee', '1446')}
+              data-testid="open-referee-auth-btn"
+              onClick={() => openAuthModal('referee')}
               className="px-5 py-3.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-100 border border-amber-200/20 font-bold text-sm md:text-base transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               لوحة تحكم الحكم
@@ -300,7 +363,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       {/* Bottom Safe Margin: Single Flat Control-Hint Line */}
       <div className="relative z-10 flex items-center justify-between text-xs text-stone-400 pt-2">
         <span>Enter أو Space لبدء شاشة العرض · F ملء الشاشة · P إيقاف مؤقت · M كتم الصوت</span>
-        <span className="font-mono tabular-nums">500+ كلمة عربية محكمة · مزامنة لحظية WebSocket</span>
+        <span className="font-mono tabular-nums">600+ كلمة عربية محكمة · 6 أطوار لعب · حماية جلسات كاملة</span>
       </div>
 
       {/* Role Authentication Modal */}
@@ -317,12 +380,14 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           >
             <div className="flex items-center justify-between">
               <h2 id="auth-modal-title" className="text-xl font-extrabold text-amber-100">
-                {authModalRole === 'referee' ? 'دخول لوحة الحكم' : 'دخول شاشة القائد (المفتاح السري)'}
+                {authModalRole === 'referee'
+                  ? 'دخول لوحة الحكم والمنظم'
+                  : 'دخول شاشة القائد (المفتاح السري)'}
               </h2>
               <button
                 type="button"
                 onClick={() => setAuthModalRole(null)}
-                className="text-stone-400 hover:text-white text-sm px-2 py-1"
+                className="text-stone-400 hover:text-white text-sm px-2 py-1 cursor-pointer"
               >
                 إغلاق
               </button>
@@ -355,11 +420,43 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               </div>
             )}
 
+            {/* One-Click Organizer Claim for Unclaimed Rooms (Works for both Referee and Captain) */}
+            <div className="p-3.5 rounded-xl bg-stone-950 border border-amber-400/30 space-y-2">
+              <div className="text-xs font-bold text-amber-200">
+                بدء مباراة جديدة في الغرفة ({roomId})؟
+              </div>
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                إذا كنت المنظم وتفتح هذه الغرفة لأول مرة، اضغط الزر أدناه للدخول المباشر وإصدار رموز الغرفة والباركود السري.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-testid="claim-organizer-btn"
+                  disabled={claimingOrganizer}
+                  onClick={handleClaimOrganizerClick}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-200 font-extrabold text-xs cursor-pointer transition-colors"
+                >
+                  {claimingOrganizer
+                    ? 'جارٍ التفعيل...'
+                    : authModalRole === 'referee'
+                    ? 'تفعيل صلاحية الحكم والدخول المباشر'
+                    : 'تفعيل الغرفة والدخول المباشر كقائد'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateFreshRoom}
+                  className="py-2.5 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-300 font-bold text-xs cursor-pointer"
+                >
+                  غرفة جديدة
+                </button>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="role-pin-input" className="block text-xs text-stone-300 mb-1.5">
                 {authModalRole === 'referee'
-                  ? 'رمز دخول الحكم (الافتراضي: 1446):'
-                  : 'رمز دخول القائد السري (الافتراضي: 2026):'}
+                  ? 'أو أدخل رمز دخول الحكم الخاص بالغرفة:'
+                  : 'أو أدخل رمز القائد السري لهذه الجولة (من شاشة الحكم أو QR):'}
               </label>
               <input
                 id="role-pin-input"
@@ -367,14 +464,16 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
                 inputMode="numeric"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder="أدخل الرمز السري"
+                placeholder="أدخل الرمز السري المكون من 4 أرقام"
                 className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-700 text-amber-200 font-mono text-center text-lg focus:outline-none focus:border-amber-400"
                 autoFocus
               />
             </div>
 
             {authError && (
-              <p className="text-xs text-red-400 font-semibold">{authError}</p>
+              <p data-testid="auth-error-msg" className="text-xs text-red-400 font-semibold">
+                {authError}
+              </p>
             )}
 
             <div className="flex items-center justify-end gap-2 pt-2">
@@ -387,10 +486,11 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               </button>
               <button
                 type="submit"
+                data-testid="submit-auth-pin-btn"
                 disabled={submitting}
                 className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-sm cursor-pointer"
               >
-                {submitting ? 'جارٍ التحقق...' : 'تأكيد الدخول'}
+                {submitting ? 'جارٍ التحقق...' : 'تأكيد الدخول بالرمز'}
               </button>
             </div>
           </form>

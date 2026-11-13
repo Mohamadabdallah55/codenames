@@ -8,13 +8,165 @@ export type WordCategory =
   | 'المهن والمجتمع'
   | 'الفضاء'
   | 'الثقافة العربية'
-  | 'المفاهيم المجردة';
+  | 'المفاهيم المجردة'
+  | 'الغذاء والطب'
+  | 'العمارة والفنون';
+
+export type WordAgeGroup = 'junior' | 'youth' | 'adult' | 'all';
+export type WordDifficulty = 'easy' | 'medium' | 'hard';
+export type WordStatus = 'approved' | 'review' | 'disabled';
+
+export type WordPackId =
+  | 'elite_classic'
+  | 'junior_kids'
+  | 'family_masjid'
+  | 'science_space'
+  | 'history_heritage'
+  | 'nature_creatures'
+  | 'sports_action'
+  | 'logic_abstract';
+
+export interface WordPackMeta {
+  id: WordPackId;
+  nameAr: string;
+  descriptionAr: string;
+  recommendedAge: WordAgeGroup;
+  difficulty: WordDifficulty;
+  categories: WordCategory[];
+  badgeColor: string;
+}
+
+export const WORD_PACKS_CATALOG: WordPackMeta[] = [
+  {
+    id: 'elite_classic',
+    nameAr: 'حزمة صراع النخبة الرسمية',
+    descriptionAr: 'مزيج متوازن من الكلمات العربية الفصيحة الغنية بالروابط الذهنية للمسابقات الرسمية.',
+    recommendedAge: 'youth',
+    difficulty: 'medium',
+    categories: [
+      'العلوم والتكنولوجيا',
+      'الجغرافيا والتاريخ',
+      'الأدوات والأشياء اليومية',
+      'الرياضة',
+      'الطبيعة',
+      'التفكير والمنطق',
+      'المهن والمجتمع',
+      'الفضاء',
+      'الثقافة العربية',
+      'المفاهيم المجردة',
+    ],
+    badgeColor: '#F59E0B',
+  },
+  {
+    id: 'junior_kids',
+    nameAr: 'حزمة الأشبال والناشئين (Junior)',
+    descriptionAr: 'كلمات يومية سهلة وملموسة للحيوانات والطبيعة والأدوات، مناسبة للأشبال (8–13 سنة).',
+    recommendedAge: 'junior',
+    difficulty: 'easy',
+    categories: ['الطبيعة', 'الأدوات والأشياء اليومية', 'الرياضة', 'الغذاء والطب', 'الفضاء'],
+    badgeColor: '#10B981',
+  },
+  {
+    id: 'family_masjid',
+    nameAr: 'حزمة الأسرة ومسجد ابن تيمية',
+    descriptionAr: 'كلمات ثقافية وقيمية وحياتية واضحة تناسب جميع الأعمار في اللقاءات العائلية والمسجدية.',
+    recommendedAge: 'all',
+    difficulty: 'easy',
+    categories: [
+      'الثقافة العربية',
+      'الأدوات والأشياء اليومية',
+      'المهن والمجتمع',
+      'الطبيعة',
+      'الغذاء والطب',
+      'العمارة والفنون',
+    ],
+    badgeColor: '#3B82F6',
+  },
+  {
+    id: 'science_space',
+    nameAr: 'حزمة العلوم والفضاء والتقنية',
+    descriptionAr: 'مصطلحات علمية وفلكية وتقنية دقيقة لطلاب المرحلة الثانوية والجامعية.',
+    recommendedAge: 'youth',
+    difficulty: 'hard',
+    categories: ['العلوم والتكنولوجيا', 'الفضاء', 'الغذاء والطب'],
+    badgeColor: '#8B5CF6',
+  },
+  {
+    id: 'history_heritage',
+    nameAr: 'حزمة التاريخ والحضارة الإسلامية',
+    descriptionAr: 'حواضر إسلامية، معالم تاريخية، تراث عربي أصيل، وعمارة مساجد.',
+    recommendedAge: 'all',
+    difficulty: 'medium',
+    categories: ['الجغرافيا والتاريخ', 'الثقافة العربية', 'العمارة والفنون'],
+    badgeColor: '#EC4899',
+  },
+  {
+    id: 'nature_creatures',
+    nameAr: 'حزمة الطبيعة والمخلوقات',
+    descriptionAr: 'تضاريس، ظواهر جوية، طيور، كائنات بحرية، نباتات وأحجار كريمة.',
+    recommendedAge: 'all',
+    difficulty: 'easy',
+    categories: ['الطبيعة', 'الجغرافيا والتاريخ', 'الغذاء والطب'],
+    badgeColor: '#14B8A6',
+  },
+  {
+    id: 'sports_action',
+    nameAr: 'حزمة الرياضة والحركة والمنافسة',
+    descriptionAr: 'ألعاب رياضية، فروسية، شطرنج، خطط، وتحديات جماعية.',
+    recommendedAge: 'all',
+    difficulty: 'easy',
+    categories: ['الرياضة', 'المهن والمجتمع'],
+    badgeColor: '#EF4444',
+  },
+  {
+    id: 'logic_abstract',
+    nameAr: 'حزمة التفكير والمنطق والمفاهيم',
+    descriptionAr: 'مفاهيم ذهنية، استنتاج، قيم عليا، وتحديات فلسفية للمحترفين.',
+    recommendedAge: 'adult',
+    difficulty: 'hard',
+    categories: ['التفكير والمنطق', 'المفاهيم المجردة'],
+    badgeColor: '#F97316',
+  },
+];
+
+export const ALL_WORD_CATEGORIES: WordCategory[] = [
+  'العلوم والتكنولوجيا',
+  'الجغرافيا والتاريخ',
+  'الأدوات والأشياء اليومية',
+  'الرياضة',
+  'الطبيعة',
+  'التفكير والمنطق',
+  'المهن والمجتمع',
+  'الفضاء',
+  'الثقافة العربية',
+  'المفاهيم المجردة',
+  'الغذاء والطب',
+  'العمارة والفنون',
+];
 
 export interface WordEntry {
   id: string;
   ar: string;
   en: string;
   category: WordCategory;
+  subCategory?: string;
+  ageGroup?: WordAgeGroup;
+  difficulty?: WordDifficulty;
+  language?: 'ar' | 'ar_en';
+  status?: WordStatus;
+  packIds?: WordPackId[];
+  semanticCluster?: string;
+  relatedWords?: string[];
+  iconType?: 'star' | 'nature' | 'tool' | 'sport' | 'science' | 'history' | 'culture' | 'mind' | 'food' | 'arch';
+}
+
+export interface WordFilterCriteria {
+  packIds?: WordPackId[];
+  categories?: WordCategory[];
+  ageGroup?: WordAgeGroup | 'any';
+  difficulty?: WordDifficulty | 'any';
+  onlyApproved?: boolean;
+  searchQuery?: string;
 }
 
 /**
@@ -32,573 +184,542 @@ export function normalizeArabicWord(word: string): string {
     .replace(/\s+/g, ' ');
 }
 
-const RAW_WORDS: Array<{ ar: string; en: string; category: WordCategory }> = [
-  // 1. العلوم والتكنولوجيا (Science & Technology) - 55 words
-  { ar: 'شيفرة', en: 'Cipher', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تردد', en: 'Frequency', category: 'العلوم والتكنولوجيا' },
-  { ar: 'طاقة', en: 'Energy', category: 'العلوم والتكنولوجيا' },
-  { ar: 'عدسة', en: 'Lens', category: 'العلوم والتكنولوجيا' },
-  { ar: 'شبكة', en: 'Network', category: 'العلوم والتكنولوجيا' },
-  { ar: 'طيف', en: 'Spectrum', category: 'العلوم والتكنولوجيا' },
-  { ar: 'موجة', en: 'Wave', category: 'العلوم والتكنولوجيا' },
-  { ar: 'جاذبية', en: 'Gravity', category: 'العلوم والتكنولوجيا' },
-  { ar: 'إشارة', en: 'Signal', category: 'العلوم والتكنولوجيا' },
-  { ar: 'خوارزمية', en: 'Algorithm', category: 'العلوم والتكنولوجيا' },
-  { ar: 'معالج', en: 'Processor', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مغناطيس', en: 'Magnet', category: 'العلوم والتكنولوجيا' },
-  { ar: 'ذرّة', en: 'Atom', category: 'العلوم والتكنولوجيا' },
-  { ar: 'نواة', en: 'Nucleus', category: 'العلوم والتكنولوجيا' },
-  { ar: 'ليزر', en: 'Laser', category: 'العلوم والتكنولوجيا' },
-  { ar: 'روبوت', en: 'Robot', category: 'العلوم والتكنولوجيا' },
-  { ar: 'بطارية', en: 'Battery', category: 'العلوم والتكنولوجيا' },
-  { ar: 'محرك', en: 'Engine', category: 'العلوم والتكنولوجيا' },
-  { ar: 'رادار', en: 'Radar', category: 'العلوم والتكنولوجيا' },
-  { ar: 'ألياف', en: 'Fiber', category: 'العلوم والتكنولوجيا' },
-  { ar: 'شريحة', en: 'Microchip', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مختبر', en: 'Laboratory', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تفاعل', en: 'Reaction', category: 'العلوم والتكنولوجيا' },
-  { ar: 'معدن', en: 'Metal', category: 'العلوم والتكنولوجيا' },
-  { ar: 'بلورة', en: 'Crystal', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تيار', en: 'Current', category: 'العلوم والتكنولوجيا' },
-  { ar: 'ضغط', en: 'Pressure', category: 'العلوم والتكنولوجيا' },
-  { ar: 'كثافة', en: 'Density', category: 'العلوم والتكنولوجيا' },
-  { ar: 'انصهار', en: 'Fusion', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تبخر', en: 'Evaporation', category: 'العلوم والتكنولوجيا' },
-  { ar: 'صدى', en: 'Echo', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مجهر', en: 'Microscope', category: 'العلوم والتكنولوجيا' },
-  { ar: 'لقاح', en: 'Vaccine', category: 'العلوم والتكنولوجيا' },
-  { ar: 'جينات', en: 'Genes', category: 'العلوم والتكنولوجيا' },
-  { ar: 'خلية', en: 'Cell', category: 'العلوم والتكنولوجيا' },
-  { ar: 'هرمون', en: 'Hormone', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مناعة', en: 'Immunity', category: 'العلوم والتكنولوجيا' },
-  { ar: 'أكسجين', en: 'Oxygen', category: 'العلوم والتكنولوجيا' },
-  { ar: 'كربون', en: 'Carbon', category: 'العلوم والتكنولوجيا' },
-  { ar: 'زئبق', en: 'Mercury', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تيتانيوم', en: 'Titanium', category: 'العلوم والتكنولوجيا' },
-  { ar: 'بندول', en: 'Pendulum', category: 'العلوم والتكنولوجيا' },
-  { ar: 'توربين', en: 'Turbine', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مكبس', en: 'Piston', category: 'العلوم والتكنولوجيا' },
-  { ar: 'بوصلة', en: 'Compass', category: 'العلوم والتكنولوجيا' },
-  { ar: 'حساس', en: 'Sensor', category: 'العلوم والتكنولوجيا' },
-  { ar: 'برمجة', en: 'Programming', category: 'العلوم والتكنولوجيا' },
-  { ar: 'خادم', en: 'Server', category: 'العلوم والتكنولوجيا' },
-  { ar: 'بيانات', en: 'Data', category: 'العلوم والتكنولوجيا' },
-  { ar: 'تشفير', en: 'Encryption', category: 'العلوم والتكنولوجيا' },
-  { ar: 'طيفور', en: 'Spectrometer', category: 'العلوم والتكنولوجيا' },
-  { ar: 'مفاعل', en: 'Reactor', category: 'العلوم والتكنولوجيا' },
-  { ar: 'شعاع', en: 'Beam', category: 'العلوم والتكنولوجيا' },
-  { ar: 'انكسار', en: 'Refraction', category: 'العلوم والتكنولوجيا' },
-  { ar: 'توازن', en: 'Equilibrium', category: 'العلوم والتكنولوجيا' },
+interface RawSeedCluster {
+  category: WordCategory;
+  subCategory: string;
+  semanticCluster: string;
+  ageGroup: WordAgeGroup;
+  difficulty: WordDifficulty;
+  packIds: WordPackId[];
+  iconType: NonNullable<WordEntry['iconType']>;
+  items: Array<[string, string]>;
+}
 
-  // 2. الجغرافيا والتاريخ (Geography & History) - 55 words
-  { ar: 'أطلس', en: 'Atlas', category: 'الجغرافيا والتاريخ' },
-  { ar: 'ميناء', en: 'Port', category: 'الجغرافيا والتاريخ' },
-  { ar: 'حصار', en: 'Siege', category: 'الجغرافيا والتاريخ' },
-  { ar: 'أسطورة', en: 'Legend', category: 'الجغرافيا والتاريخ' },
-  { ar: 'منارة', en: 'Lighthouse', category: 'الجغرافيا والتاريخ' },
-  { ar: 'خريطة', en: 'Map', category: 'الجغرافيا والتاريخ' },
-  { ar: 'قارة', en: 'Continent', category: 'الجغرافيا والتاريخ' },
-  { ar: 'أرشيف', en: 'Archive', category: 'الجغرافيا والتاريخ' },
-  { ar: 'ميثاق', en: 'Charter', category: 'الجغرافيا والتاريخ' },
-  { ar: 'قلعة', en: 'Fortress', category: 'الجغرافيا والتاريخ' },
-  { ar: 'إمبراطورية', en: 'Empire', category: 'الجغرافيا والتاريخ' },
-  { ar: 'حضارة', en: 'Civilization', category: 'الجغرافيا والتاريخ' },
-  { ar: 'آثار', en: 'Ruins', category: 'الجغرافيا والتاريخ' },
-  { ar: 'مضيق', en: 'Strait', category: 'الجغرافيا والتاريخ' },
-  { ar: 'أرخبيل', en: 'Archipelago', category: 'الجغرافيا والتاريخ' },
-  { ar: 'شبه جزيرة', en: 'Peninsula', category: 'الجغرافيا والتاريخ' },
-  { ar: 'واحة', en: 'Oasis', category: 'الجغرافيا والتاريخ' },
-  { ar: 'خليج', en: 'Gulf', category: 'الجغرافيا والتاريخ' },
-  { ar: 'محيط', en: 'Ocean', category: 'الجغرافيا والتاريخ' },
-  { ar: 'نهر', en: 'River', category: 'الجغرافيا والتاريخ' },
-  { ar: 'دلتا', en: 'Delta', category: 'الجغرافيا والتاريخ' },
-  { ar: 'هضبة', en: 'Plateau', category: 'الجغرافيا والتاريخ' },
-  { ar: 'وادي', en: 'Valley', category: 'الجغرافيا والتاريخ' },
-  { ar: 'سافانا', en: 'Savanna', category: 'الجغرافيا والتاريخ' },
-  { ar: 'قطب', en: 'Pole', category: 'الجغرافيا والتاريخ' },
-  { ar: 'استواء', en: 'Equator', category: 'الجغرافيا والتاريخ' },
-  { ar: 'حدود', en: 'Border', category: 'الجغرافيا والتاريخ' },
-  { ar: 'عاصمة', en: 'Capital', category: 'الجغرافيا والتاريخ' },
-  { ar: 'معاهدة', en: 'Treaty', category: 'الجغرافيا والتاريخ' },
-  { ar: 'ثورة', en: 'Revolution', category: 'الجغرافيا والتاريخ' },
-  { ar: 'سلالة', en: 'Dynasty', category: 'الجغرافيا والتاريخ' },
-  { ar: 'قافلة', en: 'Caravan', category: 'الجغرافيا والتاريخ' },
-  { ar: 'طريق الحرير', en: 'Silk Road', category: 'الجغرافيا والتاريخ' },
-  { ar: 'الأندلس', en: 'Andalusia', category: 'الجغرافيا والتاريخ' },
-  { ar: 'القدس', en: 'Jerusalem', category: 'الجغرافيا والتاريخ' },
-  { ar: 'بغداد', en: 'Baghdad', category: 'الجغرافيا والتاريخ' },
-  { ar: 'دمشق', en: 'Damascus', category: 'الجغرافيا والتاريخ' },
-  { ar: 'قرطاج', en: 'Carthage', category: 'الجغرافيا والتاريخ' },
-  { ar: 'بتراء', en: 'Petra', category: 'الجغرافيا والتاريخ' },
-  { ar: 'أهرامات', en: 'Pyramids', category: 'الجغرافيا والتاريخ' },
-  { ar: 'سور', en: 'Wall', category: 'الجغرافيا والتاريخ' },
-  { ar: 'خندق', en: 'Trench', category: 'الجغرافيا والتاريخ' },
-  { ar: 'أسطول', en: 'Fleet', category: 'الجغرافيا والتاريخ' },
-  { ar: 'منجنيق', en: 'Catapult', category: 'الجغرافيا والتاريخ' },
-  { ar: 'درع', en: 'Shield', category: 'الجغرافيا والتاريخ' },
-  { ar: 'تاج', en: 'Crown', category: 'الجغرافيا والتاريخ' },
-  { ar: 'عرش', en: 'Throne', category: 'الجغرافيا والتاريخ' },
-  { ar: 'مخطوطة', en: 'Manuscript', category: 'الجغرافيا والتاريخ' },
-  { ar: 'كتيبة', en: 'Battalion', category: 'الجغرافيا والتاريخ' },
-  { ar: 'هدنة', en: 'Truce', category: 'الجغرافيا والتاريخ' },
-  { ar: 'فتح', en: 'Conquest', category: 'الجغرافيا والتاريخ' },
-  { ar: 'رحالة', en: 'Explorer', category: 'الجغرافيا والتاريخ' },
-  { ar: 'مستعمرة', en: 'Colony', category: 'الجغرافيا والتاريخ' },
-  { ar: 'مرسى', en: 'Harbor', category: 'الجغرافيا والتاريخ' },
-  { ar: 'معبر', en: 'Crossing', category: 'الجغرافيا والتاريخ' },
-
-  // 3. الأدوات والأشياء اليومية (Tools & Everyday Objects) - 55 words
-  { ar: 'مرآة', en: 'Mirror', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'قناع', en: 'Mask', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'خزنة', en: 'Safe', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'طائرة', en: 'Airplane', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'جسر', en: 'Bridge', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'نفق', en: 'Tunnel', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سفينة', en: 'Ship', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مفتاح', en: 'Key', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'قفل', en: 'Lock', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ساعة', en: 'Clock', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مصباح', en: 'Lamp', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'شمعة', en: 'Candle', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'حقيبة', en: 'Bag', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مظلة', en: 'Umbrella', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سلم', en: 'Ladder', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'حبل', en: 'Rope', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مرساة', en: 'Anchor', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'عجلة', en: 'Wheel', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'قطار', en: 'Train', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'غواصة', en: 'Submarine', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مروحية', en: 'Helicopter', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'شراع', en: 'Sail', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مطرقة', en: 'Hammer', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سندان', en: 'Anvil', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'منشار', en: 'Saw', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'إبرة', en: 'Needle', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'خيط', en: 'Thread', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مقص', en: 'Scissors', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ريشة', en: 'Feather', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'محبرة', en: 'Inkwell', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'دفتر', en: 'Notebook', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ختم', en: 'Seal', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ظرف', en: 'Envelope', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'طابع', en: 'Stamp', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'جرس', en: 'Bell', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'صفارة', en: 'Whistle', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'منظار', en: 'Binoculars', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'كاميرا', en: 'Camera', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'شاشة', en: 'Screen', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'لوحة مفاتيح', en: 'Keyboard', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سماعة', en: 'Headphones', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ميكروفون', en: 'Microphone', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'كأس', en: 'Trophy', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'وسادة', en: 'Pillow', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ستارة', en: 'Curtain', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سجادة', en: 'Carpet', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'فانوس', en: 'Lantern', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'ميزان', en: 'Scale', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'صندوق', en: 'Box', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'سلسلة', en: 'Chain', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'نافذة', en: 'Window', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'بوابة', en: 'Gate', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'عمود', en: 'Pillar', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'قبة', en: 'Dome', category: 'الأدوات والأشياء اليومية' },
-  { ar: 'مئذنة', en: 'Minaret', category: 'الأدوات والأشياء اليومية' },
-
-  // 4. الرياضة (Sports) - 50 words
-  { ar: 'ملعب', en: 'Stadium', category: 'الرياضة' },
-  { ar: 'شوط', en: 'Half', category: 'الرياضة' },
-  { ar: 'مرمى', en: 'Goal', category: 'الرياضة' },
-  { ar: 'ركلة', en: 'Kick', category: 'الرياضة' },
-  { ar: 'تسلل', en: 'Offside', category: 'الرياضة' },
-  { ar: 'مدرب', en: 'Coach', category: 'الرياضة' },
-  { ar: 'حكم', en: 'Referee', category: 'الرياضة' },
-  { ar: 'بطولة', en: 'Tournament', category: 'الرياضة' },
-  { ar: 'ميدالية', en: 'Medal', category: 'الرياضة' },
-  { ar: 'سباق', en: 'Race', category: 'الرياضة' },
-  { ar: 'ماراثون', en: 'Marathon', category: 'الرياضة' },
-  { ar: 'عدّاء', en: 'Sprinter', category: 'الرياضة' },
-  { ar: 'حلبة', en: 'Arena', category: 'الرياضة' },
-  { ar: 'مبارزة', en: 'Fencing', category: 'الرياضة' },
-  { ar: 'رماية', en: 'Archery', category: 'الرياضة' },
-  { ar: 'سهم', en: 'Arrow', category: 'الرياضة' },
-  { ar: 'قوس', en: 'Bow', category: 'الرياضة' },
-  { ar: 'فروسية', en: 'Equestrian', category: 'الرياضة' },
-  { ar: 'مضمار', en: 'Track', category: 'الرياضة' },
-  { ar: 'حاجز', en: 'Hurdle', category: 'الرياضة' },
-  { ar: 'وثب', en: 'Jump', category: 'الرياضة' },
-  { ar: 'سباحة', en: 'Swimming', category: 'الرياضة' },
-  { ar: 'غوص', en: 'Diving', category: 'الرياضة' },
-  { ar: 'تجديف', en: 'Rowing', category: 'الرياضة' },
-  { ar: 'مجداف', en: 'Oar', category: 'الرياضة' },
-  { ar: 'تسلق', en: 'Climbing', category: 'الرياضة' },
-  { ar: 'تزلج', en: 'Skiing', category: 'الرياضة' },
-  { ar: 'مضرب', en: 'Racket', category: 'الرياضة' },
-  { ar: 'طاولة', en: 'Table', category: 'الرياضة' },
-  { ar: 'شطرنج', en: 'Chess', category: 'الرياضة' },
-  { ar: 'كش ملك', en: 'Checkmate', category: 'الرياضة' },
-  { ar: 'بيدق', en: 'Pawn', category: 'الرياضة' },
-  { ar: 'وزن', en: 'Weight', category: 'الرياضة' },
-  { ar: 'لياقة', en: 'Fitness', category: 'الرياضة' },
-  { ar: 'تمريرة', en: 'Pass', category: 'الرياضة' },
-  { ar: 'مراوغة', en: 'Dribble', category: 'الرياضة' },
-  { ar: 'تتويج', en: 'Coronation', category: 'الرياضة' },
-  { ar: 'نهائي', en: 'Final', category: 'الرياضة' },
-  { ar: 'تحدي', en: 'Challenge', category: 'الرياضة' },
-  { ar: 'خصم', en: 'Opponent', category: 'الرياضة' },
-  { ar: 'تعادل', en: 'Draw', category: 'الرياضة' },
-  { ar: 'شباك', en: 'Net', category: 'الرياضة' },
-  { ar: 'مدرج', en: 'Grandstand', category: 'الرياضة' },
-  { ar: 'شعلة', en: 'Torch', category: 'الرياضة' },
-  { ar: 'أولمبياد', en: 'Olympics', category: 'الرياضة' },
-  { ar: 'جولة', en: 'Round', category: 'الرياضة' },
-  { ar: 'نقطة', en: 'Point', category: 'الرياضة' },
-  { ar: 'دفاع', en: 'Defense', category: 'الرياضة' },
-  { ar: 'هجوم', en: 'Attack', category: 'الرياضة' },
-  { ar: 'تكتيك', en: 'Tactic', category: 'الرياضة' },
-
-  // 5. الطبيعة (Nature) - 55 words
-  { ar: 'سراب', en: 'Mirage', category: 'الطبيعة' },
-  { ar: 'بركان', en: 'Volcano', category: 'الطبيعة' },
-  { ar: 'منجم', en: 'Mine', category: 'الطبيعة' },
-  { ar: 'زمرد', en: 'Emerald', category: 'الطبيعة' },
-  { ar: 'ظلال', en: 'Shadows', category: 'الطبيعة' },
-  { ar: 'غابة', en: 'Forest', category: 'الطبيعة' },
-  { ar: 'صحراء', en: 'Desert', category: 'الطبيعة' },
-  { ar: 'كثبان', en: 'Dunes', category: 'الطبيعة' },
-  { ar: 'شلال', en: 'Waterfall', category: 'الطبيعة' },
-  { ar: 'ينبوع', en: 'Spring', category: 'الطبيعة' },
-  { ar: 'كهف', en: 'Cave', category: 'الطبيعة' },
-  { ar: 'جبل', en: 'Mountain', category: 'الطبيعة' },
-  { ar: 'قمة', en: 'Summit', category: 'الطبيعة' },
-  { ar: 'سفح', en: 'Slope', category: 'الطبيعة' },
-  { ar: 'هاوية', en: 'Abyss', category: 'الطبيعة' },
-  { ar: 'مرجان', en: 'Coral', category: 'الطبيعة' },
-  { ar: 'لؤلؤ', en: 'Pearl', category: 'الطبيعة' },
-  { ar: 'صدفة', en: 'Shell', category: 'الطبيعة' },
-  { ar: 'ياقوت', en: 'Ruby', category: 'الطبيعة' },
-  { ar: 'ألماس', en: 'Diamond', category: 'الطبيعة' },
-  { ar: 'عاصفة', en: 'Storm', category: 'الطبيعة' },
-  { ar: 'إعصار', en: 'Hurricane', category: 'الطبيعة' },
-  { ar: 'برق', en: 'Lightning', category: 'الطبيعة' },
-  { ar: 'رعد', en: 'Thunder', category: 'الطبيعة' },
-  { ar: 'ضباب', en: 'Fog', category: 'الطبيعة' },
-  { ar: 'ندى', en: 'Dew', category: 'الطبيعة' },
-  { ar: 'جليد', en: 'Ice', category: 'الطبيعة' },
-  { ar: 'صقيع', en: 'Frost', category: 'الطبيعة' },
-  { ar: 'زلزال', en: 'Earthquake', category: 'الطبيعة' },
-  { ar: 'حمم', en: 'Lava', category: 'الطبيعة' },
-  { ar: 'رماد', en: 'Ash', category: 'الطبيعة' },
-  { ar: 'صقر', en: 'Falcon', category: 'الطبيعة' },
-  { ar: 'نسر', en: 'Eagle', category: 'الطبيعة' },
-  { ar: 'ذئب', en: 'Wolf', category: 'الطبيعة' },
-  { ar: 'أسد', en: 'Lion', category: 'الطبيعة' },
-  { ar: 'فهد', en: 'Leopard', category: 'الطبيعة' },
-  { ar: 'غزال', en: 'Gazelle', category: 'الطبيعة' },
-  { ar: 'حصان', en: 'Horse', category: 'الطبيعة' },
-  { ar: 'جمل', en: 'Camel', category: 'الطبيعة' },
-  { ar: 'حوت', en: 'Whale', category: 'الطبيعة' },
-  { ar: 'دلفين', en: 'Dolphin', category: 'الطبيعة' },
-  { ar: 'قرش', en: 'Shark', category: 'الطبيعة' },
-  { ar: 'أخطبوط', en: 'Octopus', category: 'الطبيعة' },
-  { ar: 'نخلة', en: 'Palm', category: 'الطبيعة' },
-  { ar: 'زيتون', en: 'Olive', category: 'الطبيعة' },
-  { ar: 'سنديان', en: 'Oak', category: 'الطبيعة' },
-  { ar: 'صنوبر', en: 'Pine', category: 'الطبيعة' },
-  { ar: 'جذور', en: 'Roots', category: 'الطبيعة' },
-  { ar: 'سنبلة', en: 'Ear of Wheat', category: 'الطبيعة' },
-  { ar: 'رحيق', en: 'Nectar', category: 'الطبيعة' },
-  { ar: 'عنبر', en: 'Amber', category: 'الطبيعة' },
-  { ar: 'مسك', en: 'Musk', category: 'الطبيعة' },
-  { ar: 'شفق', en: 'Aurora', category: 'الطبيعة' },
-  { ar: 'أفق', en: 'Horizon', category: 'الطبيعة' },
-  { ar: 'مد وجزر', en: 'Tide', category: 'الطبيعة' },
-
-  // 6. التفكير والمنطق (Thinking & Logic) - 55 words
-  { ar: 'متاهة', en: 'Labyrinth', category: 'التفكير والمنطق' },
-  { ar: 'لغز', en: 'Riddle', category: 'التفكير والمنطق' },
-  { ar: 'ذاكرة', en: 'Memory', category: 'التفكير والمنطق' },
-  { ar: 'مفترق', en: 'Crossroads', category: 'التفكير والمنطق' },
-  { ar: 'دليل', en: 'Clue', category: 'التفكير والمنطق' },
-  { ar: 'برهان', en: 'Proof', category: 'التفكير والمنطق' },
-  { ar: 'فرضية', en: 'Hypothesis', category: 'التفكير والمنطق' },
-  { ar: 'نظرية', en: 'Theory', category: 'التفكير والمنطق' },
-  { ar: 'استنتاج', en: 'Deduction', category: 'التفكير والمنطق' },
-  { ar: 'تحليل', en: 'Analysis', category: 'التفكير والمنطق' },
-  { ar: 'احتمال', en: 'Probability', category: 'التفكير والمنطق' },
-  { ar: 'معادلة', en: 'Equation', category: 'التفكير والمنطق' },
-  { ar: 'مفارقة', en: 'Paradox', category: 'التفكير والمنطق' },
-  { ar: 'استراتيجية', en: 'Strategy', category: 'التفكير والمنطق' },
-  { ar: 'خطة', en: 'Plan', category: 'التفكير والمنطق' },
-  { ar: 'بصيرة', en: 'Insight', category: 'التفكير والمنطق' },
-  { ar: 'حدس', en: 'Intuition', category: 'التفكير والمنطق' },
-  { ar: 'تركيز', en: 'Focus', category: 'التفكير والمنطق' },
-  { ar: 'انتباه', en: 'Attention', category: 'التفكير والمنطق' },
-  { ar: 'إدراك', en: 'Perception', category: 'التفكير والمنطق' },
-  { ar: 'منطق', en: 'Logic', category: 'التفكير والمنطق' },
-  { ar: 'حجة', en: 'Argument', category: 'التفكير والمنطق' },
-  { ar: 'مناظرة', en: 'Debate', category: 'التفكير والمنطق' },
-  { ar: 'حوار', en: 'Dialogue', category: 'التفكير والمنطق' },
-  { ar: 'سؤال', en: 'Question', category: 'التفكير والمنطق' },
-  { ar: 'جواب', en: 'Answer', category: 'التفكير والمنطق' },
-  { ar: 'احتمالات', en: 'Odds', category: 'التفكير والمنطق' },
-  { ar: 'بديل', en: 'Alternative', category: 'التفكير والمنطق' },
-  { ar: 'خيار', en: 'Option', category: 'التفكير والمنطق' },
-  { ar: 'قرار', en: 'Decision', category: 'التفكير والمنطق' },
-  { ar: 'أولوية', en: 'Priority', category: 'التفكير والمنطق' },
-  { ar: 'معيار', en: 'Standard', category: 'التفكير والمنطق' },
-  { ar: 'مقياس', en: 'Measure', category: 'التفكير والمنطق' },
-  { ar: 'نمط', en: 'Pattern', category: 'التفكير والمنطق' },
-  { ar: 'تسلسل', en: 'Sequence', category: 'التفكير والمنطق' },
-  { ar: 'تقاطع', en: 'Intersection', category: 'التفكير والمنطق' },
-  { ar: 'توازي', en: 'Parallel', category: 'التفكير والمنطق' },
-  { ar: 'زاوية', en: 'Angle', category: 'التفكير والمنطق' },
-  { ar: 'محور', en: 'Axis', category: 'التفكير والمنطق' },
-  { ar: 'مركز', en: 'Center', category: 'التفكير والمنطق' },
-  { ar: 'محيط دائرة', en: 'Perimeter', category: 'التفكير والمنطق' },
-  { ar: 'هرم', en: 'Pyramid', category: 'التفكير والمنطق' },
-  { ar: 'مكعب', en: 'Cube', category: 'التفكير والمنطق' },
-  { ar: 'مصفوفة', en: 'Matrix', category: 'التفكير والمنطق' },
-  { ar: 'رمز', en: 'Symbol', category: 'التفكير والمنطق' },
-  { ar: 'تلميح', en: 'Hint', category: 'التفكير والمنطق' },
-  { ar: 'قرينة', en: 'Evidence', category: 'التفكير والمنطق' },
-  { ar: 'شاهد', en: 'Witness', category: 'التفكير والمنطق' },
-  { ar: 'قضية', en: 'Case', category: 'التفكير والمنطق' },
-  { ar: 'حل', en: 'Solution', category: 'التفكير والمنطق' },
-  { ar: 'فكرة', en: 'Idea', category: 'التفكير والمنطق' },
-  { ar: 'ابتكار', en: 'Innovation', category: 'التفكير والمنطق' },
-  { ar: 'عبقرية', en: 'Genius', category: 'التفكير والمنطق' },
-  { ar: 'مقارنة', en: 'Comparison', category: 'التفكير والمنطق' },
-  { ar: 'تصنيف', en: 'Classification', category: 'التفكير والمنطق' },
-
-  // 7. المهن والمجتمع (Professions & Society) - 55 words
-  { ar: 'قائد', en: 'Leader', category: 'المهن والمجتمع' },
-  { ar: 'قاضي', en: 'Judge', category: 'المهن والمجتمع' },
-  { ar: 'محامي', en: 'Lawyer', category: 'المهن والمجتمع' },
-  { ar: 'طبيب', en: 'Doctor', category: 'المهن والمجتمع' },
-  { ar: 'جراح', en: 'Surgeon', category: 'المهن والمجتمع' },
-  { ar: 'مهندس', en: 'Engineer', category: 'المهن والمجتمع' },
-  { ar: 'معماري', en: 'Architect', category: 'المهن والمجتمع' },
-  { ar: 'طيار', en: 'Pilot', category: 'المهن والمجتمع' },
-  { ar: 'قبطان', en: 'Captain', category: 'المهن والمجتمع' },
-  { ar: 'بحار', en: 'Sailor', category: 'المهن والمجتمع' },
-  { ar: 'رائد', en: 'Pioneer', category: 'المهن والمجتمع' },
-  { ar: 'عالم', en: 'Scientist', category: 'المهن والمجتمع' },
-  { ar: 'باحث', en: 'Researcher', category: 'المهن والمجتمع' },
-  { ar: 'مؤرخ', en: 'Historian', category: 'المهن والمجتمع' },
-  { ar: 'كاتب', en: 'Writer', category: 'المهن والمجتمع' },
-  { ar: 'شاعر', en: 'Poet', category: 'المهن والمجتمع' },
-  { ar: 'صحفي', en: 'Journalist', category: 'المهن والمجتمع' },
-  { ar: 'مراسل', en: 'Reporter', category: 'المهن والمجتمع' },
-  { ar: 'مترجم', en: 'Translator', category: 'المهن والمجتمع' },
-  { ar: 'معلم', en: 'Teacher', category: 'المهن والمجتمع' },
-  { ar: 'أستاذ', en: 'Professor', category: 'المهن والمجتمع' },
-  { ar: 'طالب', en: 'Student', category: 'المهن والمجتمع' },
-  { ar: 'تاجر', en: 'Merchant', category: 'المهن والمجتمع' },
-  { ar: 'صائغ', en: 'Jeweler', category: 'المهن والمجتمع' },
-  { ar: 'حداد', en: 'Blacksmith', category: 'المهن والمجتمع' },
-  { ar: 'نجار', en: 'Carpenter', category: 'المهن والمجتمع' },
-  { ar: 'نساج', en: 'Weaver', category: 'المهن والمجتمع' },
-  { ar: 'خطاط', en: 'Calligrapher', category: 'المهن والمجتمع' },
-  { ar: 'حارس', en: 'Guard', category: 'المهن والمجتمع' },
-  { ar: 'محقق', en: 'Detective', category: 'المهن والمجتمع' },
-  { ar: 'سفير', en: 'Ambassador', category: 'المهن والمجتمع' },
-  { ar: 'وزير', en: 'Minister', category: 'المهن والمجتمع' },
-  { ar: 'مجلس', en: 'Council', category: 'المهن والمجتمع' },
-  { ar: 'برلمان', en: 'Parliament', category: 'المهن والمجتمع' },
-  { ar: 'محكمة', en: 'Court', category: 'المهن والمجتمع' },
-  { ar: 'جامعة', en: 'University', category: 'المهن والمجتمع' },
-  { ar: 'مدرسة', en: 'School', category: 'المهن والمجتمع' },
-  { ar: 'مكتبة', en: 'Library', category: 'المهن والمجتمع' },
-  { ar: 'متحف', en: 'Museum', category: 'المهن والمجتمع' },
-  { ar: 'مستشفى', en: 'Hospital', category: 'المهن والمجتمع' },
-  { ar: 'مصنع', en: 'Factory', category: 'المهن والمجتمع' },
-  { ar: 'سوق', en: 'Market', category: 'المهن والمجتمع' },
-  { ar: 'بورصة', en: 'Exchange', category: 'المهن والمجتمع' },
-  { ar: 'مصرف', en: 'Bank', category: 'المهن والمجتمع' },
-  { ar: 'عملة', en: 'Currency', category: 'المهن والمجتمع' },
-  { ar: 'رصيد', en: 'Balance', category: 'المهن والمجتمع' },
-  { ar: 'استثمار', en: 'Investment', category: 'المهن والمجتمع' },
-  { ar: 'تجارة', en: 'Trade', category: 'المهن والمجتمع' },
-  { ar: 'جمارك', en: 'Customs', category: 'المهن والمجتمع' },
-  { ar: 'بريد', en: 'Mail', category: 'المهن والمجتمع' },
-  { ar: 'مؤتمر', en: 'Conference', category: 'المهن والمجتمع' },
-  { ar: 'ندوة', en: 'Symposium', category: 'المهن والمجتمع' },
-  { ar: 'جمهور', en: 'Audience', category: 'المهن والمجتمع' },
-  { ar: 'فريق', en: 'Team', category: 'المهن والمجتمع' },
-  { ar: 'نقابة', en: 'Guild', category: 'المهن والمجتمع' },
-
-  // 8. الفضاء (Space) - 50 words
-  { ar: 'مدار', en: 'Orbit', category: 'الفضاء' },
-  { ar: 'مجرة', en: 'Galaxy', category: 'الفضاء' },
-  { ar: 'نيزك', en: 'Meteor', category: 'الفضاء' },
-  { ar: 'مرصد', en: 'Observatory', category: 'الفضاء' },
-  { ar: 'كوكب', en: 'Planet', category: 'الفضاء' },
-  { ar: 'نجم', en: 'Star', category: 'الفضاء' },
-  { ar: 'شمس', en: 'Sun', category: 'الفضاء' },
-  { ar: 'قمر', en: 'Moon', category: 'الفضاء' },
-  { ar: 'هلال', en: 'Crescent', category: 'الفضاء' },
-  { ar: 'بدر', en: 'Full Moon', category: 'الفضاء' },
-  { ar: 'كسوف', en: 'Solar Eclipse', category: 'الفضاء' },
-  { ar: 'خسوف', en: 'Lunar Eclipse', category: 'الفضاء' },
-  { ar: 'مذنب', en: 'Comet', category: 'الفضاء' },
-  { ar: 'شهاب', en: 'Shooting Star', category: 'الفضاء' },
-  { ar: 'سديم', en: 'Nebula', category: 'الفضاء' },
-  { ar: 'ثقب أسود', en: 'Black Hole', category: 'الفضاء' },
-  { ar: 'كويكب', en: 'Asteroid', category: 'الفضاء' },
-  { ar: 'مجموعة شمسية', en: 'Solar System', category: 'الفضاء' },
-  { ar: 'درب التبانة', en: 'Milky Way', category: 'الفضاء' },
-  { ar: 'زحل', en: 'Saturn', category: 'الفضاء' },
-  { ar: 'المريخ', en: 'Mars', category: 'الفضاء' },
-  { ar: 'المشتري', en: 'Jupiter', category: 'الفضاء' },
-  { ar: 'عطارد', en: 'Mercury Planet', category: 'الفضاء' },
-  { ar: 'الزهرة', en: 'Venus', category: 'الفضاء' },
-  { ar: 'نبتون', en: 'Neptune', category: 'الفضاء' },
-  { ar: 'أورانوس', en: 'Uranus', category: 'الفضاء' },
-  { ar: 'سهيل', en: 'Canopus', category: 'الفضاء' },
-  { ar: 'الثريا', en: 'Pleiades', category: 'الفضاء' },
-  { ar: 'الجوزاء', en: 'Orion', category: 'الفضاء' },
-  { ar: 'قطب شمالي', en: 'North Star', category: 'الفضاء' },
-  { ar: 'تلسكوب', en: 'Telescope', category: 'الفضاء' },
-  { ar: 'مسبار', en: 'Probe', category: 'الفضاء' },
-  { ar: 'قمر صناعي', en: 'Satellite', category: 'الفضاء' },
-  { ar: 'محطة فضاء', en: 'Space Station', category: 'الفضاء' },
-  { ar: 'مكوك', en: 'Shuttle', category: 'الفضاء' },
-  { ar: 'صاروخ', en: 'Rocket', category: 'الفضاء' },
-  { ar: 'منصة إطلاق', en: 'Launchpad', category: 'الفضاء' },
-  { ar: 'انعدام وزن', en: 'Zero Gravity', category: 'الفضاء' },
-  { ar: 'غلاف جوي', en: 'Atmosphere', category: 'الفضاء' },
-  { ar: 'فوهة', en: 'Crater', category: 'الفضاء' },
-  { ar: 'سنة ضوئية', en: 'Light Year', category: 'الفضاء' },
-  { ar: 'كون', en: 'Universe', category: 'الفضاء' },
-  { ar: 'فضاء', en: 'Cosmos', category: 'الفضاء' },
-  { ar: 'كوكبة', en: 'Constellation', category: 'الفضاء' },
-  { ar: 'إشعاع', en: 'Radiation', category: 'الفضاء' },
-  { ar: 'أوزون', en: 'Ozone', category: 'الفضاء' },
-  { ar: 'موجات راديو', en: 'Radio Waves', category: 'الفضاء' },
-  { ar: 'كبسولة', en: 'Capsule', category: 'الفضاء' },
-  { ar: 'هبوط', en: 'Landing', category: 'الفضاء' },
-  { ar: 'فلك', en: 'Astronomy', category: 'الفضاء' },
-
-  // 9. الثقافة العربية (Arabic Culture & Heritage) - 55 words
-  { ar: 'ديوان', en: 'Diwan', category: 'الثقافة العربية' },
-  { ar: 'قصيدة', en: 'Poem', category: 'الثقافة العربية' },
-  { ar: 'قافية', en: 'Rhyme', category: 'الثقافة العربية' },
-  { ar: 'بلاغة', en: 'Eloquence', category: 'الثقافة العربية' },
-  { ar: 'فصاحة', en: 'Fluency', category: 'الثقافة العربية' },
-  { ar: 'معجم', en: 'Lexicon', category: 'الثقافة العربية' },
-  { ar: 'نحو', en: 'Grammar', category: 'الثقافة العربية' },
-  { ar: 'بيان', en: 'Rhetoric', category: 'الثقافة العربية' },
-  { ar: 'أمثال', en: 'Proverbs', category: 'الثقافة العربية' },
-  { ar: 'حكمة', en: 'Wisdom', category: 'الثقافة العربية' },
-  { ar: 'سمر', en: 'Evening Talk', category: 'الثقافة العربية' },
-  { ar: 'بادية', en: 'Desert Steppe', category: 'الثقافة العربية' },
-  { ar: 'خيمة', en: 'Tent', category: 'الثقافة العربية' },
-  { ar: 'وتد', en: 'Peg', category: 'الثقافة العربية' },
-  { ar: 'صهيل', en: 'Neigh', category: 'الثقافة العربية' },
-  { ar: 'مضارب', en: 'Encampment', category: 'الثقافة العربية' },
-  { ar: 'ضيافة', en: 'Hospitality', category: 'الثقافة العربية' },
-  { ar: 'قهوة', en: 'Coffee', category: 'الثقافة العربية' },
-  { ar: 'دلة', en: 'Dallah', category: 'الثقافة العربية' },
-  { ar: 'فنجان', en: 'Cup', category: 'الثقافة العربية' },
-  { ar: 'تمر', en: 'Dates', category: 'الثقافة العربية' },
-  { ar: 'زعفران', en: 'Saffron', category: 'الثقافة العربية' },
-  { ar: 'هيل', en: 'Cardamom', category: 'الثقافة العربية' },
-  { ar: 'عود', en: 'Agarwood', category: 'الثقافة العربية' },
-  { ar: 'بخور', en: 'Incense', category: 'الثقافة العربية' },
-  { ar: 'محراب', en: 'Mihrab', category: 'الثقافة العربية' },
-  { ar: 'منبر', en: 'Pulpit', category: 'الثقافة العربية' },
-  { ar: 'فسيفساء', en: 'Mosaic', category: 'الثقافة العربية' },
-  { ar: 'زخرفة', en: 'Ornament', category: 'الثقافة العربية' },
-  { ar: 'أرابيسك', en: 'Arabesque', category: 'الثقافة العربية' },
-  { ar: 'مشربية', en: 'Mashrabiya', category: 'الثقافة العربية' },
-  { ar: 'إيوان', en: 'Iwan', category: 'الثقافة العربية' },
-  { ar: 'فناء', en: 'Courtyard', category: 'الثقافة العربية' },
-  { ar: 'نافورة', en: 'Fountain', category: 'الثقافة العربية' },
-  { ar: 'سبيل', en: 'Water Kiosk', category: 'الثقافة العربية' },
-  { ar: 'وقـف', en: 'Endowment', category: 'الثقافة العربية' },
-  { ar: 'كتّاب', en: 'Kuttab', category: 'الثقافة العربية' },
-  { ar: 'حكاية', en: 'Tale', category: 'الثقافة العربية' },
-  { ar: 'راوي', en: 'Narrator', category: 'الثقافة العربية' },
-  { ar: 'مقامات', en: 'Maqamat', category: 'الثقافة العربية' },
-  { ar: 'معلقات', en: 'Muallaqat', category: 'الثقافة العربية' },
-  { ar: 'كرم', en: 'Generosity', category: 'الثقافة العربية' },
-  { ar: 'مروءة', en: 'Chivalry', category: 'الثقافة العربية' },
-  { ar: 'نخوة', en: 'Gallantry', category: 'الثقافة العربية' },
-  { ar: 'وفاء', en: 'Loyalty', category: 'الثقافة العربية' },
-  { ar: 'عهد', en: 'Covenant', category: 'الثقافة العربية' },
-  { ar: 'شورى', en: 'Consultation', category: 'الثقافة العربية' },
-  { ar: 'تراث', en: 'Heritage', category: 'الثقافة العربية' },
-  { ar: 'أصالة', en: 'Authenticity', category: 'الثقافة العربية' },
-  { ar: 'عمامة', en: 'Turban', category: 'الثقافة العربية' },
-  { ar: 'عباءة', en: 'Cloak', category: 'الثقافة العربية' },
-  { ar: 'سيف', en: 'Sword', category: 'الثقافة العربية' },
-  { ar: 'غمد', en: 'Scabbard', category: 'الثقافة العربية' },
-  { ar: 'درهم', en: 'Dirham', category: 'الثقافة العربية' },
-  { ar: 'دينار', en: 'Dinar', category: 'الثقافة العربية' },
-
-  // 10. المفاهيم المجردة (Abstract Concepts) - 55 words
-  { ar: 'عدالة', en: 'Justice', category: 'المفاهيم المجردة' },
-  { ar: 'حرية', en: 'Freedom', category: 'المفاهيم المجردة' },
-  { ar: 'سلام', en: 'Peace', category: 'المفاهيم المجردة' },
-  { ar: 'أمل', en: 'Hope', category: 'المفاهيم المجردة' },
-  { ar: 'طموح', en: 'Ambition', category: 'المفاهيم المجردة' },
-  { ar: 'إرادة', en: 'Willpower', category: 'المفاهيم المجردة' },
-  { ar: 'عزيمة', en: 'Determination', category: 'المفاهيم المجردة' },
-  { ar: 'شجاعة', en: 'Courage', category: 'المفاهيم المجردة' },
-  { ar: 'صبر', en: 'Patience', category: 'المفاهيم المجردة' },
-  { ar: 'ثقة', en: 'Trust', category: 'المفاهيم المجردة' },
-  { ar: 'صدق', en: 'Truth', category: 'المفاهيم المجردة' },
-  { ar: 'أمانة', en: 'Honesty', category: 'المفاهيم المجردة' },
-  { ar: 'مسؤولية', en: 'Responsibility', category: 'المفاهيم المجردة' },
-  { ar: 'واجب', en: 'Duty', category: 'المفاهيم المجردة' },
-  { ar: 'حق', en: 'Right', category: 'المفاهيم المجردة' },
-  { ar: 'كرامة', en: 'Dignity', category: 'المفاهيم المجردة' },
-  { ar: 'شرف', en: 'Honor', category: 'المفاهيم المجردة' },
-  { ar: 'مجد', en: 'Glory', category: 'المفاهيم المجردة' },
-  { ar: 'نصر', en: 'Victory', category: 'المفاهيم المجردة' },
-  { ar: 'تفوق', en: 'Excellence', category: 'المفاهيم المجردة' },
-  { ar: 'نجاح', en: 'Success', category: 'المفاهيم المجردة' },
-  { ar: 'خبرة', en: 'Experience', category: 'المفاهيم المجردة' },
-  { ar: 'معرفة', en: 'Knowledge', category: 'المفاهيم المجردة' },
-  { ar: 'وعي', en: 'Awareness', category: 'المفاهيم المجردة' },
-  { ar: 'خيال', en: 'Imagination', category: 'المفاهيم المجردة' },
-  { ar: 'حلم', en: 'Dream', category: 'المفاهيم المجردة' },
-  { ar: 'رؤية', en: 'Vision', category: 'المفاهيم المجردة' },
-  { ar: 'رسالة', en: 'Mission', category: 'المفاهيم المجردة' },
-  { ar: 'هدف', en: 'Objective', category: 'المفاهيم المجردة' },
-  { ar: 'غاية', en: 'Purpose', category: 'المفاهيم المجردة' },
-  { ar: 'وسيلة', en: 'Means', category: 'المفاهيم المجردة' },
-  { ar: 'فرصة', en: 'Opportunity', category: 'المفاهيم المجردة' },
-  { ar: 'مخاطرة', en: 'Risk', category: 'المفاهيم المجردة' },
-  { ar: 'مصير', en: 'Destiny', category: 'المفاهيم المجردة' },
-  { ar: 'زمن', en: 'Time', category: 'المفاهيم المجردة' },
-  { ar: 'لحظة', en: 'Moment', category: 'المفاهيم المجردة' },
-  { ar: 'أبد', en: 'Eternity', category: 'المفاهيم المجردة' },
-  { ar: 'ماضي', en: 'Past', category: 'المفاهيم المجردة' },
-  { ar: 'حاضر', en: 'Present', category: 'المفاهيم المجردة' },
-  { ar: 'مستقبل', en: 'Future', category: 'المفاهيم المجردة' },
-  { ar: 'بداية', en: 'Beginning', category: 'المفاهيم المجردة' },
-  { ar: 'نهاية', en: 'End', category: 'المفاهيم المجردة' },
-  { ar: 'تحول', en: 'Transformation', category: 'المفاهيم المجردة' },
-  { ar: 'تطور', en: 'Evolution', category: 'المفاهيم المجردة' },
-  { ar: 'نهضة', en: 'Renaissance', category: 'المفاهيم المجردة' },
-  { ar: 'وحدة', en: 'Unity', category: 'المفاهيم المجردة' },
-  { ar: 'تعاون', en: 'Cooperation', category: 'المفاهيم المجردة' },
-  { ar: 'تحالف', en: 'Alliance', category: 'المفاهيم المجردة' },
-  { ar: 'سيادة', en: 'Sovereignty', category: 'المفاهيم المجردة' },
-  { ar: 'هيبة', en: 'Prestige', category: 'المفاهيم المجردة' },
-  { ar: 'تأثير', en: 'Influence', category: 'المفاهيم المجردة' },
-  { ar: 'قوة', en: 'Strength', category: 'المفاهيم المجردة' },
-  { ar: 'صمت', en: 'Silence', category: 'المفاهيم المجردة' },
-  { ar: 'غموض', en: 'Mystery', category: 'المفاهيم المجردة' },
-  { ar: 'سر', en: 'Secret', category: 'المفاهيم المجردة' },
+const CURATED_CLUSTERS: RawSeedCluster[] = [
+  // 1. العلوم والتكنولوجيا — فيزياء وبصريات
+  {
+    category: 'العلوم والتكنولوجيا',
+    subCategory: 'الفيزياء والبصريات',
+    semanticCluster: 'physics_waves',
+    ageGroup: 'youth',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'science_space'],
+    iconType: 'science',
+    items: [
+      ['شيفرة', 'Cipher'], ['تردد', 'Frequency'], ['طاقة', 'Energy'], ['عدسة', 'Lens'],
+      ['طيف', 'Spectrum'], ['موجة', 'Wave'], ['جاذبية', 'Gravity'], ['إشارة', 'Signal'],
+      ['مغناطيس', 'Magnet'], ['ذرّة', 'Atom'], ['نواة', 'Nucleus'], ['ليزر', 'Laser'],
+      ['بلورة', 'Crystal'], ['تيار', 'Current'], ['ضغط', 'Pressure'], ['كثافة', 'Density'],
+      ['انصهار', 'Fusion'], ['تبخر', 'Evaporation'], ['صدى', 'Echo'], ['بندول', 'Pendulum'],
+      ['شعاع', 'Beam'], ['انكسار', 'Refraction'], ['توازن', 'Equilibrium'], ['منشور', 'Prism'],
+      ['احتكاك', 'Friction'], ['سرعة', 'Velocity'], ['تسارع', 'Acceleration'], ['كتلة', 'Mass'],
+      ['حرارة', 'Heat'], ['كهرباء', 'Electricity'], ['شحنة', 'Charge'], ['ملف', 'Coil'],
+    ],
+  },
+  // 2. العلوم والتكنولوجيا — الحاسوب والهندسة
+  {
+    category: 'العلوم والتكنولوجيا',
+    subCategory: 'الحاسوب والهندسة',
+    semanticCluster: 'computing_machines',
+    ageGroup: 'youth',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'science_space'],
+    iconType: 'science',
+    items: [
+      ['شبكة', 'Network'], ['خوارزمية', 'Algorithm'], ['معالج', 'Processor'], ['روبوت', 'Robot'],
+      ['بطارية', 'Battery'], ['محرك', 'Engine'], ['رادار', 'Radar'], ['ألياف', 'Fiber'],
+      ['شريحة', 'Microchip'], ['توربين', 'Turbine'], ['مكبس', 'Piston'], ['بوصلة', 'Compass'],
+      ['حساس', 'Sensor'], ['برمجة', 'Programming'], ['خادم', 'Server'], ['بيانات', 'Data'],
+      ['تشفير', 'Encryption'], ['مفاعل', 'Reactor'], ['مولد', 'Generator'], ['صمام', 'Valve'],
+      ['ترس', 'Gear'], ['رافعة', 'Crane'], ['مكثف', 'Capacitor'], ['ترانزستور', 'Transistor'],
+      ['ذاكرة عشوائية', 'RAM'], ['قرص', 'Disk'], ['بروتوكول', 'Protocol'], ['جدار ناري', 'Firewall'],
+      ['مستشعر', 'Detector'], ['أسلاك', 'Wires'], ['كابل', 'Cable'], ['تطبيق', 'Application'],
+    ],
+  },
+  // 3. العلوم والتكنولوجيا — الكيمياء والمختبر
+  {
+    category: 'العلوم والتكنولوجيا',
+    subCategory: 'الكيمياء والعناصر',
+    semanticCluster: 'chemistry_elements',
+    ageGroup: 'youth',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'science_space'],
+    iconType: 'science',
+    items: [
+      ['مختبر', 'Laboratory'], ['تفاعل', 'Reaction'], ['معدن', 'Metal'], ['مجهر', 'Microscope'],
+      ['أكسجين', 'Oxygen'], ['كربون', 'Carbon'], ['زئبق', 'Mercury'], ['تيتانيوم', 'Titanium'],
+      ['طيفور', 'Spectrometer'], ['ذهب', 'Gold'], ['فضة', 'Silver'], ['نحاس', 'Copper'],
+      ['حديد', 'Iron'], ['فولاذ', 'Steel'], ['نيتروجين', 'Nitrogen'], ['هيدروجين', 'Hydrogen'],
+      ['هيليوم', 'Helium'], ['كبريت', 'Sulfur'], ['فوسفور', 'Phosphorus'], ['ألومنيوم', 'Aluminum'],
+      ['بلاتين', 'Platinum'], ['يورانيوم', 'Uranium'], ['محلول', 'Solution'], ['حمض', 'Acid'],
+      ['قطر', 'Distillate'], ['أنبوب', 'Tube'], ['قارورة', 'Flask'], ['سبيكة', 'Alloy'],
+    ],
+  },
+  // 4. الجغرافيا والتاريخ — التضاريس والبحار
+  {
+    category: 'الجغرافيا والتاريخ',
+    subCategory: 'المعالم الجغرافية',
+    semanticCluster: 'geography_landforms',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'family_masjid', 'nature_creatures', 'junior_kids'],
+    iconType: 'history',
+    items: [
+      ['أطلس', 'Atlas'], ['ميناء', 'Port'], ['منارة', 'Lighthouse'], ['خريطة', 'Map'],
+      ['قارة', 'Continent'], ['مضيق', 'Strait'], ['أرخبيل', 'Archipelago'], ['شبه جزيرة', 'Peninsula'],
+      ['واحة', 'Oasis'], ['خليج', 'Gulf'], ['محيط', 'Ocean'], ['نهر', 'River'],
+      ['دلتا', 'Delta'], ['هضبة', 'Plateau'], ['وادي', 'Valley'], ['سافانا', 'Savanna'],
+      ['قطب', 'Pole'], ['استواء', 'Equator'], ['حدود', 'Border'], ['عاصمة', 'Capital'],
+      ['مرسى', 'Harbor'], ['معبر', 'Crossing'], ['جزيرة', 'Island'], ['شاطئ', 'Beach'],
+      ['ساحل', 'Coast'], ['بحيرة', 'Lake'], ['مضيق بحري', 'Channel'], ['تلال', 'Hills'],
+      ['سهل', 'Plain'], ['مرتفعات', 'Highlands'], ['ربوة', 'Mound'], ['جدول', 'Stream'],
+    ],
+  },
+  // 5. الجغرافيا والتاريخ — الحضارة والتاريخ الإسلامي
+  {
+    category: 'الجغرافيا والتاريخ',
+    subCategory: 'الحضارة والمدن التاريخية',
+    semanticCluster: 'islamic_history_cities',
+    ageGroup: 'all',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'history_heritage', 'family_masjid'],
+    iconType: 'history',
+    items: [
+      ['حصار', 'Siege'], ['أسطورة', 'Legend'], ['أرشيف', 'Archive'], ['ميثاق', 'Charter'],
+      ['قلعة', 'Fortress'], ['إمبراطورية', 'Empire'], ['حضارة', 'Civilization'], ['آثار', 'Ruins'],
+      ['معاهدة', 'Treaty'], ['ثورة', 'Revolution'], ['سلالة', 'Dynasty'], ['قافلة', 'Caravan'],
+      ['طريق الحرير', 'Silk Road'], ['الأندلس', 'Andalusia'], ['القدس', 'Jerusalem'], ['بغداد', 'Baghdad'],
+      ['دمشق', 'Damascus'], ['قرطاج', 'Carthage'], ['بتراء', 'Petra'], ['أهرامات', 'Pyramids'],
+      ['سور', 'Wall'], ['خندق', 'Trench'], ['أسطول', 'Fleet'], ['منجنيق', 'Catapult'],
+      ['درع', 'Shield'], ['تاج', 'Crown'], ['عرش', 'Throne'], ['مخطوطة', 'Manuscript'],
+      ['كتيبة', 'Battalion'], ['هدنة', 'Truce'], ['فتح', 'Conquest'], ['رحالة', 'Explorer'],
+      ['مستعمرة', 'Colony'], ['مكة', 'Mecca'], ['المدينة', 'Medina'], ['قرطبة', 'Cordoba'],
+      ['غرناطة', 'Granada'], ['القاهرة', 'Cairo'], ['القيروان', 'Kairouan'], ['سمرقند', 'Samarkand'],
+      ['بخارى', 'Bukhara'], ['إسطنبول', 'Istanbul'], ['حطين', 'Hattin'], ['اليرموك', 'Yarmouk'],
+      ['القادسية', 'Qadisiyyah'], ['عين جالوت', 'Ain Jalut'], ['رباط', 'Garrison'], ['برج', 'Tower'],
+    ],
+  },
+  // 6. الأدوات والأشياء اليومية — البيت والمقتنيات (ممتازة للأشبال والعائلة)
+  {
+    category: 'الأدوات والأشياء اليومية',
+    subCategory: 'مقتنيات المنزل والحياة',
+    semanticCluster: 'everyday_household',
+    ageGroup: 'junior',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'junior_kids', 'family_masjid'],
+    iconType: 'tool',
+    items: [
+      ['مرآة', 'Mirror'], ['قناع', 'Mask'], ['خزنة', 'Safe'], ['مفتاح', 'Key'],
+      ['قفل', 'Lock'], ['ساعة', 'Clock'], ['مصباح', 'Lamp'], ['شمعة', 'Candle'],
+      ['حقيبة', 'Bag'], ['مظلة', 'Umbrella'], ['سلم', 'Ladder'], ['حبل', 'Rope'],
+      ['إبرة', 'Needle'], ['خيط', 'Thread'], ['مقص', 'Scissors'], ['ريشة', 'Feather'],
+      ['محبرة', 'Inkwell'], ['دفتر', 'Notebook'], ['ختم', 'Seal'], ['ظرف', 'Envelope'],
+      ['طابع', 'Stamp'], ['جرس', 'Bell'], ['صفارة', 'Whistle'], ['منظار', 'Binoculars'],
+      ['كاميرا', 'Camera'], ['شاشة', 'Screen'], ['لوحة مفاتيح', 'Keyboard'], ['سماعة', 'Headphones'],
+      ['ميكروفون', 'Microphone'], ['كأس', 'Trophy'], ['وسادة', 'Pillow'], ['ستارة', 'Curtain'],
+      ['سجادة', 'Carpet'], ['فانوس', 'Lantern'], ['ميزان', 'Scale'], ['صندوق', 'Box'],
+      ['سلسلة', 'Chain'], ['نافذة', 'Window'], ['بوابة', 'Gate'], ['قلم', 'Pen'],
+      ['كتاب', 'Book'], ['نظارة', 'Glasses'], ['خاتم', 'Ring'], ['قلادة', 'Necklace'],
+      ['إبريق', 'Pitcher'], ['كوب', 'Mug'], ['طبق', 'Plate'], ['ملعقة', 'Spoon'],
+    ],
+  },
+  // 7. الأدوات والأشياء اليومية — المواصلات والورش
+  {
+    category: 'الأدوات والأشياء اليومية',
+    subCategory: 'المركبات والعدد',
+    semanticCluster: 'vehicles_tools',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'junior_kids', 'family_masjid'],
+    iconType: 'tool',
+    items: [
+      ['طائرة', 'Airplane'], ['جسر', 'Bridge'], ['نفق', 'Tunnel'], ['سفينة', 'Ship'],
+      ['مرساة', 'Anchor'], ['عجلة', 'Wheel'], ['قطار', 'Train'], ['غواصة', 'Submarine'],
+      ['مروحية', 'Helicopter'], ['شراع', 'Sail'], ['مطرقة', 'Hammer'], ['سندان', 'Anvil'],
+      ['منشار', 'Saw'], ['عمود', 'Pillar'], ['قبة', 'Dome'], ['مئذنة', 'Minaret'],
+      ['سيارة', 'Car'], ['دراجة', 'Bicycle'], ['قارب', 'Boat'], ['زورق', 'Canoe'],
+      ['منطاد', 'Balloon'], ['عربة', 'Cart'], ['شاحنة', 'Truck'], ['حافلة', 'Bus'],
+      ['مفك', 'Screwdriver'], ['كماشة', 'Pliers'], ['فأس', 'Axe'], ['مجرفة', 'Shovel'],
+      ['مسطرة', 'Ruler'], ['فرجار', 'Dividers'], ['إزميل', 'Chisel'], ['قفل رقمي', 'Padlock'],
+    ],
+  },
+  // 8. الرياضة — المنافسات والألعاب
+  {
+    category: 'الرياضة',
+    subCategory: 'الألعاب الرياضية والبطولات',
+    semanticCluster: 'sports_competition',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'sports_action', 'junior_kids', 'family_masjid'],
+    iconType: 'sport',
+    items: [
+      ['ملعب', 'Stadium'], ['شوط', 'Half'], ['مرمى', 'Goal'], ['ركلة', 'Kick'],
+      ['تسلل', 'Offside'], ['مدرب', 'Coach'], ['حكم', 'Referee'], ['بطولة', 'Tournament'],
+      ['ميدالية', 'Medal'], ['سباق', 'Race'], ['ماراثون', 'Marathon'], ['عدّاء', 'Sprinter'],
+      ['حلبة', 'Arena'], ['مبارزة', 'Fencing'], ['رماية', 'Archery'], ['سهم', 'Arrow'],
+      ['قوس', 'Bow'], ['فروسية', 'Equestrian'], ['مضمار', 'Track'], ['حاجز', 'Hurdle'],
+      ['وثب', 'Jump'], ['سباحة', 'Swimming'], ['غوص', 'Diving'], ['تجديف', 'Rowing'],
+      ['مجداف', 'Oar'], ['تسلق', 'Climbing'], ['تزلج', 'Skiing'], ['مضرب', 'Racket'],
+      ['طاولة', 'Table'], ['شطرنج', 'Chess'], ['كش ملك', 'Checkmate'], ['بيدق', 'Pawn'],
+      ['وزن', 'Weight'], ['لياقة', 'Fitness'], ['تمريرة', 'Pass'], ['مراوغة', 'Dribble'],
+      ['تتويج', 'Coronation'], ['نهائي', 'Final'], ['تحدي', 'Challenge'], ['خصم', 'Opponent'],
+      ['تعادل', 'Draw'], ['شباك', 'Net'], ['مدرج', 'Grandstand'], ['شعلة', 'Torch'],
+      ['أولمبياد', 'Olympics'], ['جولة', 'Round'], ['نقطة', 'Point'], ['دفاع', 'Defense'],
+      ['هجوم', 'Attack'], ['تكتيك', 'Tactic'], ['كرة', 'Ball'], ['بطل', 'Champion'],
+      ['درع البطولة', 'Trophy Shield'], ['ركلة جزاء', 'Penalty'], ['حارس مرمى', 'Goalkeeper'], ['تتابع', 'Relay'],
+      ['رمح', 'Javelin'], ['قرص رياضي', 'Discus'], ['مصارعة', 'Wrestling'], ['كاراتيه', 'Karate'],
+    ],
+  },
+  // 9. الطبيعة — الحيوانات والطيور والبحار (ممتازة للأشبال والعائلة)
+  {
+    category: 'الطبيعة',
+    subCategory: 'الحيوانات والطيور',
+    semanticCluster: 'animals_wildlife',
+    ageGroup: 'junior',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'junior_kids', 'nature_creatures', 'family_masjid'],
+    iconType: 'nature',
+    items: [
+      ['صقر', 'Falcon'], ['نسر', 'Eagle'], ['ذئب', 'Wolf'], ['أسد', 'Lion'],
+      ['فهد', 'Leopard'], ['غزال', 'Gazelle'], ['حصان', 'Horse'], ['جمل', 'Camel'],
+      ['حوت', 'Whale'], ['دلفين', 'Dolphin'], ['قرش', 'Shark'], ['أخطبوط', 'Octopus'],
+      ['نمر', 'Tiger'], ['فيل', 'Elephant'], ['زرافة', 'Giraffe'], ['دب', 'Bear'],
+      ['ثعلب', 'Fox'], ['أرنب', 'Rabbit'], ['سنجاب', 'Squirrel'], ['قنفذ', 'Hedgehog'],
+      ['سلحفاة', 'Turtle'], ['تمساح', 'Crocodile'], ['طاووس', 'Peacock'], ['حمامة', 'Dove'],
+      ['ببغاء', 'Parrot'], ['بومة', 'Owl'], ['نورس', 'Seagull'], ['سنونو', 'Swallow'],
+      ['نحلة', 'Bee'], ['فراشة', 'Butterfly'], ['نملة', 'Ant'], ['فرس النهر', 'Hippo'],
+      ['بطريق', 'Penguin'], ['نعامة', 'Ostrich'], ['كركدن', 'Rhino'], ['أيل', 'Deer'],
+      ['قندس', 'Beaver'], ['كنغر', 'Kangaroo'], ['مرجان بحري', 'Sea Coral'], ['نجم البحر', 'Starfish'],
+    ],
+  },
+  // 10. الطبيعة — النباتات والظواهر والأحجار الكريمة
+  {
+    category: 'الطبيعة',
+    subCategory: 'الظواهر الطبيعية والنباتات',
+    semanticCluster: 'nature_phenomena_gems',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'nature_creatures', 'family_masjid', 'junior_kids'],
+    iconType: 'nature',
+    items: [
+      ['سراب', 'Mirage'], ['بركان', 'Volcano'], ['منجم', 'Mine'], ['زمرد', 'Emerald'],
+      ['ظلال', 'Shadows'], ['غابة', 'Forest'], ['صحراء', 'Desert'], ['كثبان', 'Dunes'],
+      ['شلال', 'Waterfall'], ['ينبوع', 'Spring'], ['كهف', 'Cave'], ['جبل', 'Mountain'],
+      ['قمة', 'Summit'], ['سفح', 'Slope'], ['هاوية', 'Abyss'], ['مرجان', 'Coral'],
+      ['لؤلؤ', 'Pearl'], ['صدفة', 'Shell'], ['ياقوت', 'Ruby'], ['ألماس', 'Diamond'],
+      ['عاصفة', 'Storm'], ['إعصار', 'Hurricane'], ['برق', 'Lightning'], ['رعد', 'Thunder'],
+      ['ضباب', 'Fog'], ['ندى', 'Dew'], ['جليد', 'Ice'], ['صقيع', 'Frost'],
+      ['زلزال', 'Earthquake'], ['حمم', 'Lava'], ['رماد', 'Ash'], ['نخلة', 'Palm'],
+      ['زيتون', 'Olive'], ['سنديان', 'Oak'], ['صنوبر', 'Pine'], ['جذور', 'Roots'],
+      ['سنبلة', 'Ear of Wheat'], ['رحيق', 'Nectar'], ['عنبر', 'Amber'], ['مسك', 'Musk'],
+      ['شفق', 'Aurora'], ['أفق', 'Horizon'], ['مد وجزر', 'Tide'], ['مطر', 'Rain'],
+      ['ثلج', 'Snow'], ['قوس قزح', 'Rainbow'], ['نسيم', 'Breeze'], ['رياح', 'Wind'],
+      ['سحاب', 'Cloud'], ['غصن', 'Branch'], ['ورقة شجر', 'Leaf'], ['زهرة', 'Flower'],
+      ['ياسمين', 'Jasmine'], ['ريحان', 'Basil'], ['أرز', 'Cedar'], ['فيروز', 'Turquoise'],
+      ['عقيق', 'Agate'], ['مرمر', 'Alabaster'], ['رخام', 'Marble'], ['جرانيت', 'Granite'],
+    ],
+  },
+  // 11. التفكير والمنطق
+  {
+    category: 'التفكير والمنطق',
+    subCategory: 'الاستنتاج والرياضيات',
+    semanticCluster: 'logic_reasoning',
+    ageGroup: 'youth',
+    difficulty: 'hard',
+    packIds: ['elite_classic', 'logic_abstract'],
+    iconType: 'mind',
+    items: [
+      ['متاهة', 'Labyrinth'], ['لغز', 'Riddle'], ['ذاكرة', 'Memory'], ['مفترق', 'Crossroads'],
+      ['دليل', 'Clue'], ['برهان', 'Proof'], ['فرضية', 'Hypothesis'], ['نظرية', 'Theory'],
+      ['استنتاج', 'Deduction'], ['تحليل', 'Analysis'], ['احتمال', 'Probability'], ['معادلة', 'Equation'],
+      ['مفارقة', 'Paradox'], ['استراتيجية', 'Strategy'], ['خطة', 'Plan'], ['بصيرة', 'Insight'],
+      ['حدس', 'Intuition'], ['تركيز', 'Focus'], ['انتباه', 'Attention'], ['إدراك', 'Perception'],
+      ['منطق', 'Logic'], ['حجة', 'Argument'], ['مناظرة', 'Debate'], ['حوار', 'Dialogue'],
+      ['سؤال', 'Question'], ['جواب', 'Answer'], ['احتمالات', 'Odds'], ['بديل', 'Alternative'],
+      ['خيار', 'Option'], ['قرار', 'Decision'], ['أولوية', 'Priority'], ['معيار', 'Standard'],
+      ['مقياس', 'Measure'], ['نمط', 'Pattern'], ['تسلسل', 'Sequence'], ['تقاطع', 'Intersection'],
+      ['توازي', 'Parallel'], ['زاوية', 'Angle'], ['محور', 'Axis'], ['مركز', 'Center'],
+      ['محيط دائرة', 'Perimeter'], ['هرم', 'Pyramid'], ['مكعب', 'Cube'], ['مصفوفة', 'Matrix'],
+      ['رمز', 'Symbol'], ['تلميح', 'Hint'], ['قرينة', 'Evidence'], ['شاهد', 'Witness'],
+      ['قضية', 'Case'], ['حل', 'Solution'], ['فكرة', 'Idea'], ['ابتكار', 'Innovation'],
+      ['عبقرية', 'Genius'], ['مقارنة', 'Comparison'], ['تصنيف', 'Classification'], ['استقراء', 'Induction'],
+      ['قياس', 'Syllogism'], ['معضلة', 'Dilemma'], ['إحداثيات', 'Coordinates'], ['متغير', 'Variable'],
+      ['ثابت', 'Constant'], ['دالة', 'Function'], ['نسبة', 'Ratio'], ['تماثل', 'Symmetry'],
+    ],
+  },
+  // 12. المهن والمجتمع
+  {
+    category: 'المهن والمجتمع',
+    subCategory: 'الوظائف والمؤسسات',
+    semanticCluster: 'professions_institutions',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['elite_classic', 'family_masjid', 'sports_action'],
+    iconType: 'culture',
+    items: [
+      ['قائد', 'Leader'], ['قاضي', 'Judge'], ['محامي', 'Lawyer'], ['طبيب', 'Doctor'],
+      ['جراح', 'Surgeon'], ['مهندس', 'Engineer'], ['معماري', 'Architect'], ['طيار', 'Pilot'],
+      ['قبطان', 'Captain'], ['بحار', 'Sailor'], ['رائد', 'Pioneer'], ['عالم', 'Scientist'],
+      ['باحث', 'Researcher'], ['مؤرخ', 'Historian'], ['كاتب', 'Writer'], ['شاعر', 'Poet'],
+      ['صحفي', 'Journalist'], ['مراسل', 'Reporter'], ['مترجم', 'Translator'], ['معلم', 'Teacher'],
+      ['أستاذ', 'Professor'], ['طالب', 'Student'], ['تاجر', 'Merchant'], ['صائغ', 'Jeweler'],
+      ['حداد', 'Blacksmith'], ['نجار', 'Carpenter'], ['نساج', 'Weaver'], ['خطاط', 'Calligrapher'],
+      ['حارس', 'Guard'], ['محقق', 'Detective'], ['سفير', 'Ambassador'], ['وزير', 'Minister'],
+      ['مجلس', 'Council'], ['برلمان', 'Parliament'], ['محكمة', 'Court'], ['جامعة', 'University'],
+      ['مدرسة', 'School'], ['مكتبة', 'Library'], ['متحف', 'Museum'], ['مستشفى', 'Hospital'],
+      ['مصنع', 'Factory'], ['سوق', 'Market'], ['بورصة', 'Exchange'], ['مصرف', 'Bank'],
+      ['عملة', 'Currency'], ['رصيد', 'Balance'], ['استثمار', 'Investment'], ['تجارة', 'Trade'],
+      ['جمارك', 'Customs'], ['بريد', 'Mail'], ['مؤتمر', 'Conference'], ['ندوة', 'Symposium'],
+      ['جمهور', 'Audience'], ['فريق', 'Team'], ['نقابة', 'Guild'], ['صيدلي', 'Pharmacist'],
+      ['مزارع', 'Farmer'], ['خباز', 'Baker'], ['إطفائي', 'Firefighter'], ['مسعف', 'Paramedic'],
+      ['مراقب', 'Inspector'], ['مستشار', 'Advisor'], ['أمين مكتبة', 'Librarian'], ['جمعية', 'Association'],
+    ],
+  },
+  // 13. الفضاء والفلك
+  {
+    category: 'الفضاء',
+    subCategory: 'الأجرام والرحلات الفضائية',
+    semanticCluster: 'astronomy_space',
+    ageGroup: 'all',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'science_space', 'junior_kids'],
+    iconType: 'star',
+    items: [
+      ['مدار', 'Orbit'], ['مجرة', 'Galaxy'], ['نيزك', 'Meteor'], ['مرصد', 'Observatory'],
+      ['كوكب', 'Planet'], ['نجم', 'Star'], ['شمس', 'Sun'], ['قمر', 'Moon'],
+      ['هلال', 'Crescent'], ['بدر', 'Full Moon'], ['كسوف', 'Solar Eclipse'], ['خسوف', 'Lunar Eclipse'],
+      ['مذنب', 'Comet'], ['شهاب', 'Shooting Star'], ['سديم', 'Nebula'], ['ثقب أسود', 'Black Hole'],
+      ['كويكب', 'Asteroid'], ['مجموعة شمسية', 'Solar System'], ['درب التبانة', 'Milky Way'], ['زحل', 'Saturn'],
+      ['المريخ', 'Mars'], ['المشتري', 'Jupiter'], ['عطارد', 'Mercury Planet'], ['الزهرة', 'Venus'],
+      ['نبتون', 'Neptune'], ['أورانوس', 'Uranus'], ['سهيل', 'Canopus'], ['الثريا', 'Pleiades'],
+      ['الجوزاء', 'Orion'], ['قطب شمالي', 'North Star'], ['تلسكوب', 'Telescope'], ['مسبار', 'Probe'],
+      ['قمر صناعي', 'Satellite'], ['محطة فضاء', 'Space Station'], ['مكوك', 'Shuttle'], ['صاروخ', 'Rocket'],
+      ['منصة إطلاق', 'Launchpad'], ['انعدام وزن', 'Zero Gravity'], ['غلاف جوي', 'Atmosphere'], ['فوهة', 'Crater'],
+      ['سنة ضوئية', 'Light Year'], ['كون', 'Universe'], ['فضاء', 'Cosmos'], ['كوكبة', 'Constellation'],
+      ['إشعاع', 'Radiation'], ['أوزون', 'Ozone'], ['موجات راديو', 'Radio Waves'], ['كبسولة', 'Capsule'],
+      ['هبوط', 'Landing'], ['فلك', 'Astronomy'], ['مجس فضائي', 'Space Rover'], ['القطب الجنوبي', 'South Pole'],
+      ['بدلة فضاء', 'Spacesuit'], ['أبولو', 'Apollo'], ['شفق قطبي', 'Polar Aurora'], ['تاج شمسي', 'Corona'],
+    ],
+  },
+  // 14. الثقافة العربية والإسلامية
+  {
+    category: 'الثقافة العربية',
+    subCategory: 'الأدب والتراث الإسلامي',
+    semanticCluster: 'arabic_islamic_heritage',
+    ageGroup: 'all',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'family_masjid', 'history_heritage'],
+    iconType: 'culture',
+    items: [
+      ['ديوان', 'Diwan'], ['قصيدة', 'Poem'], ['قافية', 'Rhyme'], ['بلاغة', 'Eloquence'],
+      ['فصاحة', 'Fluency'], ['معجم', 'Lexicon'], ['نحو', 'Grammar'], ['بيان', 'Rhetoric'],
+      ['أمثال', 'Proverbs'], ['حكمة', 'Wisdom'], ['سمر', 'Evening Talk'], ['بادية', 'Desert Steppe'],
+      ['خيمة', 'Tent'], ['وتد', 'Peg'], ['صهيل', 'Neigh'], ['مضارب', 'Encampment'],
+      ['ضيافة', 'Hospitality'], ['قهوة', 'Coffee'], ['دلة', 'Dallah'], ['فنجان', 'Cup'],
+      ['تمر', 'Dates'], ['زعفران', 'Saffron'], ['هيل', 'Cardamom'], ['عود', 'Agarwood'],
+      ['بخور', 'Incense'], ['محراب', 'Mihrab'], ['منبر', 'Pulpit'], ['فسيفساء', 'Mosaic'],
+      ['زخرفة', 'Ornament'], ['أرابيسك', 'Arabesque'], ['مشربية', 'Mashrabiya'], ['إيوان', 'Iwan'],
+      ['فناء', 'Courtyard'], ['نافورة', 'Fountain'], ['سبيل', 'Water Kiosk'], ['وقف', 'Endowment'],
+      ['كتّاب', 'Kuttab'], ['حكاية', 'Tale'], ['راوي', 'Narrator'], ['مقامات', 'Maqamat'],
+      ['معلقات', 'Muallaqat'], ['كرم', 'Generosity'], ['مروءة', 'Chivalry'], ['نخوة', 'Gallantry'],
+      ['وفاء', 'Loyalty'], ['عهد', 'Covenant'], ['شورى', 'Consultation'], ['تراث', 'Heritage'],
+      ['أصالة', 'Authenticity'], ['عمامة', 'Turban'], ['عباءة', 'Cloak'], ['سيف', 'Sword'],
+      ['غمد', 'Scabbard'], ['درهم', 'Dirham'], ['دينار', 'Dinar'], ['مسواك', 'Miswak'],
+      ['مصحف', 'Mushaf'], ['خط كوفي', 'Kufic Script'], ['إجازة علمية', 'Ijaza'], ['حلقة علم', 'Study Circle'],
+      ['رواق', 'Portico'], ['سقاية', 'Watering'], ['تكية', 'Hospice'], ['صومعة', 'Minaret Tower'],
+      ['قنديل', 'Oil Lamp'], ['مسبحة', 'Prayer Beads'], ['سواك', 'Toothstick'], ['كعبة', 'Kaaba'],
+    ],
+  },
+  // 15. المفاهيم المجردة والقيم
+  {
+    category: 'المفاهيم المجردة',
+    subCategory: 'القيم والمعاني الكلية',
+    semanticCluster: 'abstract_values',
+    ageGroup: 'youth',
+    difficulty: 'medium',
+    packIds: ['elite_classic', 'logic_abstract', 'family_masjid'],
+    iconType: 'mind',
+    items: [
+      ['عدالة', 'Justice'], ['حرية', 'Freedom'], ['سلام', 'Peace'], ['أمل', 'Hope'],
+      ['طموح', 'Ambition'], ['إرادة', 'Willpower'], ['عزيمة', 'Determination'], ['شجاعة', 'Courage'],
+      ['صبر', 'Patience'], ['ثقة', 'Trust'], ['صدق', 'Truth'], ['أمانة', 'Honesty'],
+      ['مسؤولية', 'Responsibility'], ['واجب', 'Duty'], ['حق', 'Right'], ['كرامة', 'Dignity'],
+      ['شرف', 'Honor'], ['مجد', 'Glory'], ['نصر', 'Victory'], ['تفوق', 'Excellence'],
+      ['نجاح', 'Success'], ['خبرة', 'Experience'], ['معرفة', 'Knowledge'], ['وعي', 'Awareness'],
+      ['خيال', 'Imagination'], ['حلم', 'Dream'], ['رؤية', 'Vision'], ['رسالة', 'Mission'],
+      ['هدف', 'Objective'], ['غاية', 'Purpose'], ['وسيلة', 'Means'], ['فرصة', 'Opportunity'],
+      ['مخاطرة', 'Risk'], ['مصير', 'Destiny'], ['زمن', 'Time'], ['لحظة', 'Moment'],
+      ['أبد', 'Eternity'], ['ماضي', 'Past'], ['حاضر', 'Present'], ['مستقبل', 'Future'],
+      ['بداية', 'Beginning'], ['نهاية', 'End'], ['تحول', 'Transformation'], ['تطور', 'Evolution'],
+      ['نهضة', 'Renaissance'], ['وحدة', 'Unity'], ['تعاون', 'Cooperation'], ['تحالف', 'Alliance'],
+      ['سيادة', 'Sovereignty'], ['هيبة', 'Prestige'], ['تأثير', 'Influence'], ['قوة', 'Strength'],
+      ['صمت', 'Silence'], ['غموض', 'Mystery'], ['سر', 'Secret'], ['إخلاص', 'Sincerity'],
+      ['إحسان', 'Benevolence'], ['تقوى', 'Piety'], ['رحمة', 'Mercy'], ['تسامح', 'Tolerance'],
+      ['إيثار', 'Altruism'], ['همة', 'Zeal'], ['ثبات', 'Steadfastness'], ['يقين', 'Certainty'],
+      ['بركة', 'Blessing'], ['سكينة', 'Tranquility'], ['وقار', 'Gravity'], ['اعتدال', 'Moderation'],
+    ],
+  },
+  // 16. الغذاء والطب والصحة (حزمة جديدة غنية لجميع الأعمار والأشبال)
+  {
+    category: 'الغذاء والطب',
+    subCategory: 'الأغذية والطب والصحة',
+    semanticCluster: 'food_medicine_health',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['junior_kids', 'family_masjid', 'science_space', 'nature_creatures'],
+    iconType: 'food',
+    items: [
+      ['لقاح', 'Vaccine'], ['جينات', 'Genes'], ['خلية', 'Cell'], ['هرمون', 'Hormone'],
+      ['مناعة', 'Immunity'], ['عسل', 'Honey'], ['خبز', 'Bread'], ['قمح', 'Wheat'],
+      ['شعير', 'Barley'], ['أرز أبيض', 'Rice'], ['تفاح', 'Apple'], ['رمان', 'Pomegranate'],
+      ['تين', 'Fig'], ['عنب', 'Grapes'], ['برتقال', 'Orange'], ['ليمون', 'Lemon'],
+      ['موز', 'Banana'], ['فراولة', 'Strawberry'], ['بطيخ', 'Watermelon'], ['شمام', 'Melon'],
+      ['لوز', 'Almond'], ['جوز', 'Walnut'], ['فستق', 'Pistachio'], ['سمسم', 'Sesame'],
+      ['حليب', 'Milk'], ['جبن', 'Cheese'], ['زبدة', 'Butter'], ['زيت', 'Oil'],
+      ['ملح', 'Salt'], ['سكر', 'Sugar'], ['قرفة', 'Cinnamon'], ['زنجبيل', 'Ginger'],
+      ['نعناع', 'Mint'], ['شاي', 'Tea'], ['عصير', 'Juice'], ['حساء', 'Soup'],
+      ['دواء', 'Medicine'], ['مرهم', 'Ointment'], ['ضمادة', 'Bandage'], ['سماعة طبيب', 'Stethoscope'],
+      ['نبض', 'Pulse'], ['قلب', 'Heart'], ['رئة', 'Lung'], ['عظم', 'Bone'],
+      ['عضلة', 'Muscle'], ['دم', 'Blood'], ['فيتامين', 'Vitamin'], ['بروتين', 'Protein'],
+      ['إسعاف', 'First Aid'], ['وصفة طبية', 'Prescription'], ['عدوى', 'Infection'], ['وقاية', 'Prevention'],
+      ['شريان', 'Artery'], ['وريد', 'Vein'], ['بصمة', 'Fingerprint'], ['قرنية', 'Cornea'],
+      ['حنجرة', 'Larynx'], ['مفصل', 'Joint'], ['عمود فقري', 'Spine'], ['تغذية', 'Nutrition'],
+      ['كمثرى', 'Pear'], ['خوخ', 'Peach'], ['مشمش', 'Apricot'], ['توت', 'Berry'],
+      ['عدس', 'Lentils'], ['حمص', 'Chickpeas'], ['فول', 'Beans'], ['ذرة', 'Corn'],
+      ['شوكولاتة', 'Chocolate'], ['كعكة', 'Cake'], ['فطيرة', 'Pie'], ['مربى', 'Jam'],
+    ],
+  },
+  // 17. العمارة والفنون والخط
+  {
+    category: 'العمارة والفنون',
+    subCategory: 'الهندسة المعمارية والتصميم',
+    semanticCluster: 'architecture_design',
+    ageGroup: 'all',
+    difficulty: 'medium',
+    packIds: ['family_masjid', 'history_heritage', 'elite_classic'],
+    iconType: 'arch',
+    items: [
+      ['قنطرة', 'Archway'], ['عقود', 'Arches'], ['صحن المسجد', 'Courtyard Hall'], ['مقرنصات', 'Muqarnas'],
+      ['محراب مزخرف', 'Carved Mihrab'], ['خزف', 'Ceramics'], ['فخار', 'Pottery'], ['زجاج ملون', 'Stained Glass'],
+      ['نحت', 'Sculpture'], ['لوحة فنية', 'Canvas'], ['إطار', 'Frame'], ['فرشاة', 'Brush'],
+      ['ألوان مائية', 'Watercolors'], ['ظل ونور', 'Chiaroscuro'], ['منظور', 'Perspective'], ['تناسق', 'Harmony'],
+      ['واجهة', 'Facade'], ['شرفة', 'Balcony'], ['درج', 'Staircase'], ['قصر', 'Palace'],
+      ['حصن', 'Citadel'], ['سرداب', 'Basement'], ['دهليز', 'Corridor'], ['قاعة', 'Hall'],
+      ['منصة', 'Podium'], ['مسرح', 'Theater'], ['معرض', 'Gallery'], ['نصب تذكاري', 'Monument'],
+      ['مسلة', 'Obelisk'], ['نافورة رخامية', 'Marble Fountain'], ['بلاط', 'Tiles'], ['قرميد', 'Roof Tiles'],
+      ['سقف', 'Ceiling'], ['جدار', 'Wall Panel'], ['أساس', 'Foundation'], ['مخطط هندسي', 'Blueprint'],
+      ['مجسم', 'Scale Model'], ['بوصلة معمارية', 'Drafting Compass'], ['خط ثلث', 'Thuluth Script'], ['خط نسخ', 'Naskh Script'],
+      ['خط ديواني', 'Diwani Script'], ['طغراء', 'Tughra'], ['رقعة', 'Ruqah'], ['تذهيب', 'Gilding'],
+      ['مجلد', 'Tome'], ['غلاف', 'Cover'], ['فهرس', 'Index'], ['هامش', 'Margin'],
+      ['عنوان', 'Title'], ['فصل', 'Chapter'], ['مطبعة', 'Printing Press'], ['ورق بردي', 'Papyrus'],
+      ['رق', 'Parchment'], ['مداد', 'Ink'], ['يراعة', 'Reed Pen'], ['منمنمة', 'Miniature'],
+    ],
+  },
+  // 18. توسعة إضافية للعلوم والطبيعة والمجتمع (لضمان تنوع ضخم يبلغ مئات الكلمات الإضافية)
+  {
+    category: 'الطبيعة',
+    subCategory: 'البيئة والمناخ',
+    semanticCluster: 'climate_ecology',
+    ageGroup: 'all',
+    difficulty: 'medium',
+    packIds: ['nature_creatures', 'science_space', 'family_masjid'],
+    iconType: 'nature',
+    items: [
+      ['احتباس حراري', 'Global Warming'], ['طاقة شمسية', 'Solar Power'], ['رياح موسمية', 'Monsoon'], ['تصحر', 'Desertification'],
+      ['محمية طبيعية', 'Nature Reserve'], ['تنوع حيوي', 'Biodiversity'], ['سلسلة غذائية', 'Food Chain'], ['تمثيل ضوئي', 'Photosynthesis'],
+      ['يخضور', 'Chlorophyll'], ['لقاح زهر', 'Pollen'], ['خلية نحل', 'Beehive'], ['عش', 'Nest'],
+      ['جحر', 'Burrow'], ['عرين', 'Den'], ['قطيع', 'Herd'], ['سرب', 'Flock'],
+      ['هجرة طيور', 'Migration'], ['سبات شتوي', 'Hibernation'], ['تمويه', 'Camouflage'], ['افتراس', 'Predation'],
+      ['ينبوع حار', 'Geyser'], ['نهر جليدي', 'Glacier'], ['جبل جليدي', 'Iceberg'], ['شعاب مرجانية', 'Coral Reef'],
+      ['مضيق جبلي', 'Gorge'], ['فوهة بركان', 'Caldera'], ['واحة نخيل', 'Palm Oasis'], ['تربة', 'Soil'],
+      ['طين', 'Clay'], ['رمل', 'Sand'], ['حصى', 'Pebbles'], ['صخر', 'Rock'],
+    ],
+  },
+  {
+    category: 'الأدوات والأشياء اليومية',
+    subCategory: 'الأجهزة والاتصالات',
+    semanticCluster: 'devices_communication',
+    ageGroup: 'all',
+    difficulty: 'easy',
+    packIds: ['junior_kids', 'family_masjid', 'elite_classic'],
+    iconType: 'tool',
+    items: [
+      ['هاتف', 'Phone'], ['مذياع', 'Radio'], ['تلفاز', 'Television'], ['حاسوب', 'Computer'],
+      ['جهاز عرض', 'Projector'], ['طابعة', 'Printer'], ['ماسح ضوئي', 'Scanner'], ['عدسة مكبرة', 'Magnifier'],
+      ['ساعة رملية', 'Hourglass'], ['ساعة شمسية', 'Sundial'], ['تقويم', 'Calendar'], ['منبه', 'Alarm'],
+      ['مروحة', 'Fan'], ['مدفأة', 'Heater'], ['مكيف', 'Air Conditioner'], ['ثلاجة', 'Refrigerator'],
+      ['فرن', 'Oven'], ['غسالة', 'Washer'], ['مكواة', 'Iron Press'], ['مكنسة', 'Broom'],
+      ['مصباح يدوي', 'Flashlight'], ['بطارية شحن', 'Powerbank'], ['شاحن', 'Charger'], ['مقبس', 'Socket'],
+      ['مفتاح كهرباء', 'Switch'], ['جرس باب', 'Doorbell'], ['قفل ذكي', 'Smart Lock'], ['كاميرا مراقبة', 'Security Cam'],
+      ['حقيبة سفر', 'Suitcase'], ['خريطة ورقية', 'Paper Map'], ['تذكرة', 'Ticket'], ['جواز سفر', 'Passport'],
+    ],
+  },
 ];
+
+function buildInitialOfficialWordBank(): WordEntry[] {
+  const clusterToWords = new Map<string, string[]>();
+  for (const cluster of CURATED_CLUSTERS) {
+    const existing = clusterToWords.get(cluster.semanticCluster) || [];
+    for (const [ar] of cluster.items) {
+      existing.push(ar);
+    }
+    clusterToWords.set(cluster.semanticCluster, existing);
+  }
+
+  const seenNormalized = new Set<string>();
+  const result: WordEntry[] = [];
+
+  for (const cluster of CURATED_CLUSTERS) {
+    const siblings = clusterToWords.get(cluster.semanticCluster) || [];
+    for (const [ar, en] of cluster.items) {
+      const cleanedAr = ar.trim().replace(/[\u0640]/g, '').replace(/\s+/g, ' ');
+      const norm = normalizeArabicWord(cleanedAr);
+      if (seenNormalized.has(norm)) continue;
+      seenNormalized.add(norm);
+
+      const related = siblings.filter((w) => w !== cleanedAr).slice(0, 6);
+      result.push({
+        id: `word_${result.length + 1}`,
+        ar: cleanedAr,
+        en: en.trim(),
+        category: cluster.category,
+        subCategory: cluster.subCategory,
+        ageGroup: cluster.ageGroup,
+        difficulty: cluster.difficulty,
+        language: en ? 'ar_en' : 'ar',
+        status: 'approved',
+        packIds: cluster.packIds,
+        semanticCluster: cluster.semanticCluster,
+        relatedWords: related,
+        iconType: cluster.iconType,
+      });
+    }
+  }
+
+  return result;
+}
+
+export const OFFICIAL_WORD_BANK: readonly WordEntry[] = Object.freeze(
+  buildInitialOfficialWordBank()
+);
 
 /**
  * Deduplicates and validates a list of word entries using normalized Arabic comparison.
  */
 export function buildValidatedWordBank(
-  rawEntries: Array<{ ar: string; en?: string; category?: WordCategory }>
+  rawEntries: Array<{
+    ar: string;
+    en?: string;
+    category?: WordCategory;
+    subCategory?: string;
+    ageGroup?: WordAgeGroup;
+    difficulty?: WordDifficulty;
+    status?: WordStatus;
+    packIds?: WordPackId[];
+    semanticCluster?: string;
+    relatedWords?: string[];
+    iconType?: WordEntry['iconType'];
+  }>
 ): {
   words: WordEntry[];
   duplicatesRemoved: string[];
@@ -624,35 +745,77 @@ export function buildValidatedWordBank(
 
     seenNormalized.add(norm);
     words.push({
-      id: `w_${words.length + 1}_${norm.replace(/\s+/g, '_')}`,
+      id: `word_${words.length + 1}`,
       ar: cleanedAr,
-      en: (item.en || '').trim(),
+      en: item.en?.trim() || '',
       category: item.category || 'المفاهيم المجردة',
+      subCategory: item.subCategory || 'عام',
+      ageGroup: item.ageGroup || 'all',
+      difficulty: item.difficulty || 'medium',
+      language: item.en?.trim() ? 'ar_en' : 'ar',
+      status: item.status || 'approved',
+      packIds: item.packIds && item.packIds.length > 0 ? item.packIds : ['elite_classic'],
+      semanticCluster: item.semanticCluster || 'general',
+      relatedWords: item.relatedWords || [],
+      iconType: item.iconType || 'star',
     });
   }
 
   return { words, duplicatesRemoved, invalidRemoved };
 }
 
-const VALIDATED_BANK = buildValidatedWordBank(RAW_WORDS);
+/**
+ * Filters and mixes word packs according to pre-match criteria (Pack IDs, Categories, Age, Difficulty, Approval Status).
+ */
+export function filterWordPoolByCriteria(
+  pool: readonly WordEntry[],
+  criteria: WordFilterCriteria = {}
+): WordEntry[] {
+  const {
+    packIds,
+    categories,
+    ageGroup = 'any',
+    difficulty = 'any',
+    onlyApproved = true,
+    searchQuery = '',
+  } = criteria;
 
-export const OFFICIAL_WORD_BANK: WordEntry[] = VALIDATED_BANK.words;
+  const cleanSearch = normalizeArabicWord(searchQuery);
 
-export const WORD_CATEGORIES: WordCategory[] = [
-  'العلوم والتكنولوجيا',
-  'الجغرافيا والتاريخ',
-  'الأدوات والأشياء اليومية',
-  'الرياضة',
-  'الطبيعة',
-  'التفكير والمنطق',
-  'المهن والمجتمع',
-  'الفضاء',
-  'الثقافة العربية',
-  'المفاهيم المجردة',
-];
+  return pool.filter((word) => {
+    if (onlyApproved && word.status && word.status !== 'approved') {
+      return false;
+    }
+    if (packIds && packIds.length > 0) {
+      const wPacks = word.packIds || ['elite_classic'];
+      const matchesPack = packIds.some((pid) => wPacks.includes(pid));
+      if (!matchesPack) return false;
+    }
+    if (categories && categories.length > 0) {
+      if (!categories.includes(word.category)) return false;
+    }
+    if (ageGroup !== 'any') {
+      const wAge = word.ageGroup || 'all';
+      if (ageGroup === 'junior' && wAge !== 'junior' && wAge !== 'all') return false;
+      if (ageGroup === 'youth' && wAge === 'adult') return false;
+    }
+    if (difficulty !== 'any') {
+      const wDiff = word.difficulty || 'medium';
+      if (wDiff !== difficulty) return false;
+    }
+    if (cleanSearch) {
+      const normAr = normalizeArabicWord(word.ar);
+      const normEn = (word.en || '').toLowerCase();
+      if (!normAr.includes(cleanSearch) && !normEn.includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
 
 /**
- * Parses custom JSON or plain array of strings/objects imported by Referee.
+ * Parses imported JSON content (supports array of strings or array of WordEntry objects).
  */
 export function parseImportedWordsJson(jsonString: string): {
   entries: WordEntry[];
@@ -661,52 +824,54 @@ export function parseImportedWordsJson(jsonString: string): {
 } {
   try {
     const parsed = JSON.parse(jsonString);
-    const rawList: Array<{ ar: string; en?: string; category?: WordCategory }> = [];
-
-    const sourceArray = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray(parsed?.words)
-      ? parsed.words
-      : null;
-
-    if (!sourceArray) {
+    if (!Array.isArray(parsed)) {
       return {
         entries: [],
         duplicatesRemoved: [],
-        error: 'يجب أن يحتوي ملف JSON على مصفوفة كلمات أو خاصية "words".',
+        error: 'يجب أن يحتوي ملف JSON على مصفوفة (Array) من الكلمات.',
       };
     }
 
-    for (const item of sourceArray) {
+    const rawItems: Array<{
+      ar: string;
+      en?: string;
+      category?: WordCategory;
+      subCategory?: string;
+      ageGroup?: WordAgeGroup;
+      difficulty?: WordDifficulty;
+      status?: WordStatus;
+      packIds?: WordPackId[];
+    }> = [];
+
+    for (const item of parsed) {
       if (typeof item === 'string') {
-        rawList.push({ ar: item, en: '', category: 'المفاهيم المجردة' });
+        rawItems.push({ ar: item, en: '', category: 'المفاهيم المجردة' });
       } else if (item && typeof item === 'object' && typeof item.ar === 'string') {
-        rawList.push({
+        rawItems.push({
           ar: item.ar,
           en: typeof item.en === 'string' ? item.en : '',
-          category: WORD_CATEGORIES.includes(item.category) ? item.category : 'المفاهيم المجردة',
-        });
-      } else if (item && typeof item === 'object' && typeof item.word === 'string') {
-        rawList.push({
-          ar: item.word,
-          en: typeof item.en === 'string' ? item.en : '',
-          category: 'المفاهيم المجردة',
+          category: item.category || 'المفاهيم المجردة',
+          subCategory: item.subCategory || 'مخصص',
+          ageGroup: item.ageGroup || 'all',
+          difficulty: item.difficulty || 'medium',
+          status: item.status || 'approved',
+          packIds: Array.isArray(item.packIds) ? item.packIds : ['elite_classic'],
         });
       }
     }
 
-    const result = buildValidatedWordBank(rawList);
-    if (result.words.length === 0) {
+    const validated = buildValidatedWordBank(rawItems);
+    if (validated.words.length === 0) {
       return {
         entries: [],
-        duplicatesRemoved: result.duplicatesRemoved,
+        duplicatesRemoved: validated.duplicatesRemoved,
         error: 'لم يتم العثور على كلمات عربية صالحة في الملف.',
       };
     }
 
     return {
-      entries: result.words,
-      duplicatesRemoved: result.duplicatesRemoved,
+      entries: validated.words,
+      duplicatesRemoved: validated.duplicatesRemoved,
     };
   } catch {
     return {

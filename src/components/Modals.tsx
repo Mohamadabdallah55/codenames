@@ -3,85 +3,122 @@ import QRCode from 'qrcode';
 import {
   ClientGameState,
   ClientRole,
+  GAME_MODES_CATALOG,
   GameSettings,
   getWinReasonArabic,
 } from '../game/rules';
+import { soundFX } from '../utils/sound';
 
 interface RoomShareModalProps {
   roomId: string;
   gameState: ClientGameState;
+  sessionToken?: string;
+  pin?: string;
   onClose: () => void;
   onSwitchRole: (role: ClientRole, pin?: string) => Promise<{ ok: boolean; error?: string }>;
+  onClaimOrganizer: (keepAudienceState?: boolean) => Promise<{
+    ok: boolean;
+    refereePin?: string;
+    spymasterPin?: string;
+    error?: string;
+  }>;
   onRegeneratePin: () => Promise<{ ok: boolean; spymasterPin?: string }>;
 }
 
 export const RoomShareModal: React.FC<RoomShareModalProps> = ({
   roomId,
   gameState,
+  sessionToken,
+  pin,
   onClose,
   onSwitchRole,
+  onClaimOrganizer,
   onRegeneratePin,
 }) => {
-  const [qrTab, setQrTab] = useState<'spymaster_red' | 'spymaster_blue' | 'referee' | 'audience'>('spymaster_red');
+  const [qrTab, setQrTab] = useState<'spymaster_red' | 'spymaster_blue' | 'referee' | 'audience'>(
+    'spymaster_red'
+  );
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [authorizedQr, setAuthorizedQr] = useState<boolean>(
+    Boolean(sessionToken || gameState.role !== 'audience')
+  );
+  const [refereeClaimed, setRefereeClaimed] = useState<boolean>(true);
   const [liveSpymasterPin, setLiveSpymasterPin] = useState<string>(gameState.spymasterPin || '');
   const [liveRefereePin, setLiveRefereePin] = useState<string>(gameState.refereePin || '');
-  const [liveRoundSeed, setLiveRoundSeed] = useState<string>(gameState.roundSeed || '');
   const [pinInput, setPinInput] = useState('');
-  const [selectedRole, setSelectedRole] = useState<ClientRole>('spymaster_red');
+  const [selectedRole, setSelectedRole] = useState<ClientRole>(
+    gameState.role === 'audience' ? 'referee' : gameState.role
+  );
   const [authError, setAuthError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [claiming, setClaiming] = useState<boolean>(false);
 
-  // Fetch current dynamic game PINs and seed when modal opens
+  // Fetch protected QR info with current credentials (never falls back to hardcoded PINs)
   useEffect(() => {
     let active = true;
-    fetch(`/api/rooms/${encodeURIComponent(roomId)}/qr-info`)
+    const params = new URLSearchParams();
+    if (sessionToken) params.set('sessionToken', sessionToken);
+    if (pin) params.set('pin', pin);
+
+    fetch(`/api/rooms/${encodeURIComponent(roomId)}/qr-info?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         if (!active || !data?.ok) return;
-        setLiveSpymasterPin(data.spymasterPin || '');
-        setLiveRefereePin(data.refereePin || '');
-        setLiveRoundSeed(data.roundSeed || gameState.roundSeed);
+        setRefereeClaimed(Boolean(data.refereeClaimed));
+        if (data.authorized) {
+          setAuthorizedQr(true);
+          if (data.spymasterPin) setLiveSpymasterPin(data.spymasterPin);
+          if (data.refereePin) setLiveRefereePin(data.refereePin);
+        } else {
+          setAuthorizedQr(false);
+          setLiveSpymasterPin('');
+          setLiveRefereePin('');
+        }
       })
       .catch(() => {
         if (!active) return;
-        setLiveSpymasterPin(gameState.spymasterPin || '2026');
-        setLiveRefereePin(gameState.refereePin || '1446');
-        setLiveRoundSeed(gameState.roundSeed);
+        setAuthorizedQr(Boolean(gameState.spymasterPin || gameState.refereePin));
       });
     return () => {
       active = false;
     };
-  }, [roomId, gameState.spymasterPin, gameState.refereePin, gameState.roundSeed]);
+  }, [roomId, sessionToken, pin, gameState.spymasterPin, gameState.refereePin, gameState.roundNumber]);
 
-  const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
+  const baseUrl =
+    typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : '';
 
-  const buildTargetUrl = (targetRole: 'spymaster_red' | 'spymaster_blue' | 'referee' | 'audience') => {
+  const buildTargetUrl = (
+    targetRole: 'spymaster_red' | 'spymaster_blue' | 'referee' | 'audience'
+  ) => {
     const params = new URLSearchParams();
     params.set('room', roomId);
     params.set('round', String(gameState.roundNumber));
-    if (liveRoundSeed) {
-      params.set('seed', liveRoundSeed);
-    }
     params.set('start', gameState.startingTeam);
 
     if (targetRole === 'audience') {
       params.set('autostart', '1');
     } else if (targetRole === 'referee') {
       params.set('role', 'referee');
-      if (liveRefereePin) params.set('pin', liveRefereePin);
+      if (authorizedQr && liveRefereePin) params.set('pin', liveRefereePin);
     } else {
       params.set('role', targetRole);
-      if (liveSpymasterPin) params.set('pin', liveSpymasterPin);
+      if (authorizedQr && liveSpymasterPin) params.set('pin', liveSpymasterPin);
     }
     return `${baseUrl}?${params.toString()}`;
   };
 
   const activeTargetUrl = buildTargetUrl(qrTab);
+  const isTabLocked =
+    qrTab !== 'audience' &&
+    (!authorizedQr || (qrTab === 'referee' && !liveRefereePin));
 
-  // Generate real scannable QR Code image whenever target URL changes
+  // Generate real scannable QR Code image whenever target URL changes and is unlocked
   useEffect(() => {
     let active = true;
+    if (isTabLocked) {
+      setQrDataUrl('');
+      return;
+    }
     QRCode.toDataURL(activeTargetUrl, {
       width: 240,
       margin: 2,
@@ -97,9 +134,10 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
     return () => {
       active = false;
     };
-  }, [activeTargetUrl]);
+  }, [activeTargetUrl, isTabLocked]);
 
   const handleCopyUrl = () => {
+    if (isTabLocked) return;
     navigator.clipboard?.writeText(activeTargetUrl).catch(() => {});
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -112,12 +150,58 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
     }
   };
 
+  const handleClaimClick = async (enterRefereePanel = false) => {
+    setClaiming(true);
+    setAuthError(null);
+    const keepAudience = enterRefereePanel ? false : gameState.role === 'audience';
+    const res = await onClaimOrganizer(keepAudience);
+    setClaiming(false);
+    if (res.ok) {
+      setAuthorizedQr(true);
+      setRefereeClaimed(true);
+      if (res.refereePin) setLiveRefereePin(res.refereePin);
+      if (res.spymasterPin) setLiveSpymasterPin(res.spymasterPin);
+      if (enterRefereePanel) {
+        onClose();
+      } else {
+        setQrTab('spymaster_red');
+      }
+    } else {
+      setAuthError(res.error || 'تعذر تفعيل صلاحية المنظم.');
+    }
+  };
+
   const handleRoleSwitch = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
+    if (selectedRole === 'audience') {
+      await onSwitchRole('audience');
+      onClose();
+      return;
+    }
     const pinToUse =
       pinInput.trim() ||
       (selectedRole === 'referee' ? liveRefereePin : liveSpymasterPin);
+
+    if (!pinToUse) {
+      // Automatically claim organizer credentials and switch to the requested role seamlessly
+      setClaiming(true);
+      const claimRes = await onClaimOrganizer(false);
+      setClaiming(false);
+      if (!claimRes.ok) {
+        setAuthError(claimRes.error || 'تعذر تفعيل صلاحية الحكم.');
+        return;
+      }
+      if (
+        (selectedRole === 'spymaster_red' || selectedRole === 'spymaster_blue') &&
+        claimRes.spymasterPin
+      ) {
+        await onSwitchRole(selectedRole, claimRes.spymasterPin);
+      }
+      onClose();
+      return;
+    }
+
     const res = await onSwitchRole(selectedRole, pinToUse);
     if (!res.ok) {
       setAuthError(res.error || 'رمز الدخول غير صحيح.');
@@ -141,7 +225,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
               باركود القائد والحكم (QR) · الجولة #{gameState.roundNumber}
             </h2>
             <p className="text-xs text-stone-400">
-              امسح الكود بكاميرا هاتف القائد لفتح المفتاح السري لهذه الجولة مباشرةً
+              روابط ورموز الدخول المحمية للقادة والحكم وشاشة الجمهور
             </p>
           </div>
           <button
@@ -201,91 +285,130 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
           </button>
         </div>
 
-        {/* Scannable QR Code Card + Dynamic Per-Game PIN Readout */}
-        <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-stone-950 border border-stone-800">
-          <div className="shrink-0 p-3 rounded-2xl bg-[#FBF8F1] border-2 border-amber-400/60 shadow-lg">
-            {qrDataUrl ? (
-              <img
-                data-testid="spymaster-qr-image"
-                src={qrDataUrl}
-                alt={`رمز استجابة سريعة QR لـ ${qrTab}`}
-                referrerPolicy="no-referrer"
-                className="w-44 h-44 sm:w-48 sm:h-48 object-contain rounded-lg"
-              />
-            ) : (
-              <div className="w-44 h-44 flex items-center justify-center text-stone-800 text-xs font-bold">
-                جارٍ توليد QR...
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 space-y-3 text-right w-full">
-            <div className="space-y-1">
-              <div className="text-xs text-stone-400">
-                {qrTab === 'spymaster_red'
-                  ? 'باركود الدخول المباشر للقائد الأحمر'
-                  : qrTab === 'spymaster_blue'
-                  ? 'باركود الدخول المباشر للقائد الأزرق'
-                  : qrTab === 'referee'
-                  ? 'باركود لوحة تحكم الحكم'
-                  : 'باركود شاشة المشاهدين'}
-              </div>
-              <div className="text-sm font-extrabold text-white">
-                الغرفة: <span className="font-mono text-amber-300">{roomId}</span> · الجولة #{gameState.roundNumber}
-              </div>
+        {/* Protected or Scannable QR Code Card */}
+        {isTabLocked ? (
+          <div
+            data-testid="qr-locked-notice"
+            className="p-5 rounded-2xl bg-stone-950 border border-amber-400/30 space-y-3 text-center"
+          >
+            <div className="text-sm font-extrabold text-amber-200">
+              🔒 باركود القادة والحكم محمي لمنع كشف المفتاح السري للجمهور
             </div>
-
-            {qrTab !== 'audience' && (
-              <div className="p-3 rounded-xl bg-stone-900 border border-amber-400/30 flex items-center justify-between">
-                <div>
-                  <div className="text-[11px] text-stone-400">
-                    {qrTab === 'referee'
-                      ? 'رمز الحكم الخاص بهذه الغرفة:'
-                      : 'رمز القائد الخاص بهذه الجولة فقط:'}
-                  </div>
-                  <div
-                    data-testid="dynamic-game-pin"
-                    className="text-2xl font-mono font-extrabold text-amber-300 tracking-widest tabular-nums"
-                  >
-                    {qrTab === 'referee' ? liveRefereePin : liveSpymasterPin}
-                  </div>
-                </div>
-
-                {qrTab !== 'referee' && (
-                  <button
-                    type="button"
-                    onClick={handleRegenerateClick}
-                    className="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-200 text-xs font-bold border border-amber-200/20 cursor-pointer"
-                  >
-                    تغيير الرمز
-                  </button>
-                )}
-              </div>
-            )}
-
-            <p className="text-[11px] text-stone-400 leading-relaxed">
-              يتغير رمز القائد تلقائيًا مع كل جولة جديدة لمنع دخول قادة الجولات السابقة، كما يتضمن الباركود البذرة الرقمية للجولة ليعمل حتى على الاستضافات الثابتة (مثل GitHub Pages).
+            <p className="text-xs text-stone-400 max-w-md mx-auto leading-relaxed">
+              اضغط الزر أدناه لتفعيل صلاحية الحكم أو المنظم وإظهار باركود القادة ورمز الجولة السري فورًا.
             </p>
-
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
               <button
                 type="button"
-                onClick={handleCopyUrl}
-                className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs cursor-pointer"
+                data-testid="modal-claim-organizer-btn"
+                disabled={claiming}
+                onClick={() => handleClaimClick(false)}
+                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs cursor-pointer shadow-lg"
               >
-                {copiedLink ? 'تم نسخ الرابط ✓' : 'نسخ رابط الدخول المباشر'}
+                {claiming
+                  ? 'جارٍ التفعيل...'
+                  : 'تفعيل صلاحية الحكم وإظهار QR القادة'}
               </button>
-              <a
-                href="/assets/aistudio/CN_rulebook_EN_30_4eed9759.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs whitespace-nowrap"
+              <button
+                type="button"
+                data-testid="modal-open-referee-panel-btn"
+                disabled={claiming}
+                onClick={() => handleClaimClick(true)}
+                className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-200 border border-amber-400/40 font-extrabold text-xs cursor-pointer"
               >
-                كتيب القواعد PDF
-              </a>
+                فتح لوحة تحكم الحكم الكاملة
+              </button>
+            </div>
+            {refereeClaimed && (
+              <span className="sr-only">الغرفة مفعلة</span>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-stone-950 border border-stone-800">
+            <div className="shrink-0 p-3 rounded-2xl bg-[#FBF8F1] border-2 border-amber-400/60 shadow-lg">
+              {qrDataUrl ? (
+                <img
+                  data-testid="spymaster-qr-image"
+                  src={qrDataUrl}
+                  alt={`رمز استجابة سريعة QR لـ ${qrTab}`}
+                  referrerPolicy="no-referrer"
+                  className="w-44 h-44 sm:w-48 sm:h-48 object-contain rounded-lg"
+                />
+              ) : (
+                <div className="w-44 h-44 flex items-center justify-center text-stone-800 text-xs font-bold">
+                  جارٍ توليد QR...
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-3 text-right w-full">
+              <div className="space-y-1">
+                <div className="text-xs text-stone-400">
+                  {qrTab === 'spymaster_red'
+                    ? 'باركود الدخول المباشر للقائد الأحمر'
+                    : qrTab === 'spymaster_blue'
+                    ? 'باركود الدخول المباشر للقائد الأزرق'
+                    : qrTab === 'referee'
+                    ? 'باركود لوحة تحكم الحكم'
+                    : 'باركود شاشة المشاهدين'}
+                </div>
+                <div className="text-sm font-extrabold text-white">
+                  الغرفة: <span className="font-mono text-amber-300">{roomId}</span> · الجولة #{gameState.roundNumber}
+                </div>
+              </div>
+
+              {qrTab !== 'audience' && (
+                <div className="p-3 rounded-xl bg-stone-900 border border-amber-400/30 flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] text-stone-400">
+                      {qrTab === 'referee'
+                        ? 'رمز الحكم الخاص بهذه الغرفة:'
+                        : 'رمز القائد الخاص بهذه الجولة فقط:'}
+                    </div>
+                    <div
+                      data-testid="dynamic-game-pin"
+                      className="text-2xl font-mono font-extrabold text-amber-300 tracking-widest tabular-nums"
+                    >
+                      {qrTab === 'referee' ? liveRefereePin : liveSpymasterPin}
+                    </div>
+                  </div>
+
+                  {qrTab !== 'referee' && (
+                    <button
+                      type="button"
+                      onClick={handleRegenerateClick}
+                      className="px-3 py-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-200 text-xs font-bold border border-amber-200/20 cursor-pointer"
+                    >
+                      تغيير الرمز وإلغاء الجلسات
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                يتغير رمز القائد تلقائيًا مع كل جولة جديدة ويُلغي صلاحية جلسات القادة السابقة فورًا لمنع أي كشف غير مصرح به.
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyUrl}
+                  className="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-xs cursor-pointer"
+                >
+                  {copiedLink ? 'تم نسخ الرابط ✓' : 'نسخ رابط الدخول المباشر'}
+                </button>
+                <a
+                  href="/assets/aistudio/CN_rulebook_EN_30_4eed9759.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs whitespace-nowrap"
+                >
+                  كتيب القواعد PDF
+                </a>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Direct Role Switcher on Current Device */}
         <form
@@ -293,7 +416,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
           className="p-3.5 rounded-xl bg-stone-950 border border-amber-200/15 space-y-2.5"
         >
           <div className="text-xs font-extrabold text-amber-200">
-            أو تبديل الواجهة على هذا الجهاز الآن:
+            تبديل الواجهة على هذا الجهاز (يتطلب رمز الغرفة السري):
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
@@ -315,7 +438,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
               type="button"
               onClick={() => {
                 setSelectedRole('spymaster_red');
-                setPinInput(liveSpymasterPin);
+                if (authorizedQr && liveSpymasterPin) setPinInput(liveSpymasterPin);
               }}
               className={`py-2 px-2 rounded-lg font-bold cursor-pointer ${
                 selectedRole === 'spymaster_red'
@@ -329,7 +452,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
               type="button"
               onClick={() => {
                 setSelectedRole('spymaster_blue');
-                setPinInput(liveSpymasterPin);
+                if (authorizedQr && liveSpymasterPin) setPinInput(liveSpymasterPin);
               }}
               className={`py-2 px-2 rounded-lg font-bold cursor-pointer ${
                 selectedRole === 'spymaster_blue'
@@ -343,7 +466,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
               type="button"
               onClick={() => {
                 setSelectedRole('referee');
-                setPinInput(liveRefereePin);
+                if (authorizedQr && liveRefereePin) setPinInput(liveRefereePin);
               }}
               className={`py-2 px-2 rounded-lg font-bold cursor-pointer ${
                 selectedRole === 'referee'
@@ -358,14 +481,14 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
           <div className="flex items-center gap-2">
             {selectedRole !== 'audience' && (
               <input
-                type="text"
+                type="password"
                 inputMode="numeric"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 placeholder={
                   selectedRole === 'referee'
-                    ? `رمز الحكم (${liveRefereePin})`
-                    : `رمز القائد للجولة (${liveSpymasterPin})`
+                    ? 'أدخل رمز الحكم السري'
+                    : 'أدخل رمز القائد للجولة'
                 }
                 aria-label="رمز الدخول لتبديل الواجهة"
                 className="flex-1 px-3 py-2 rounded-lg bg-stone-900 border border-stone-700 text-amber-200 font-mono text-center text-sm"
@@ -388,6 +511,7 @@ export const RoomShareModal: React.FC<RoomShareModalProps> = ({
 
 interface SettingsModalProps {
   settings: GameSettings;
+  canEditSettings: boolean;
   onUpdateSettings: (partial: Partial<GameSettings>) => void;
   onToggleFullscreen: () => void;
   onClose: () => void;
@@ -395,10 +519,23 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
+  canEditSettings,
   onUpdateSettings,
   onToggleFullscreen,
   onClose,
 }) => {
+  const [localVolume, setLocalVolume] = useState<number>(
+    settings.soundVolume ?? soundFX.getVolume()
+  );
+
+  const handleVolumeChange = (nextVol: number) => {
+    setLocalVolume(nextVol);
+    soundFX.setVolume(nextVol);
+    if (canEditSettings) {
+      onUpdateSettings({ soundVolume: nextVol });
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
@@ -409,7 +546,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <div className="w-full max-w-md bg-stone-900 border border-amber-200/25 rounded-2xl p-6 shadow-2xl space-y-4 text-right text-xs">
         <div className="flex items-center justify-between border-b border-stone-800 pb-3">
           <h2 id="settings-modal-title" className="text-lg font-extrabold text-amber-200">
-            إعدادات العرض والمباراة
+            إعدادات العرض والصوت والمباراة
           </h2>
           <button
             type="button"
@@ -432,140 +569,195 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
-            <span>وضع تباين البروجكتر العالي</span>
-            <button
-              type="button"
-              onClick={() =>
-                onUpdateSettings({
-                  projectorHighContrast: !settings.projectorHighContrast,
-                })
-              }
-              className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
-                settings.projectorHighContrast
-                  ? 'bg-amber-500 text-stone-950'
-                  : 'bg-stone-800 text-stone-300'
-              }`}
-            >
-              {settings.projectorHighContrast ? 'مفعّل' : 'عادي'}
-            </button>
+          {/* Sound & Master Volume Controls */}
+          <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span>المؤثرات الصوتية</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !settings.soundEnabled;
+                  soundFX.setMuted(!next);
+                  if (canEditSettings) {
+                    onUpdateSettings({ soundEnabled: next });
+                  }
+                }}
+                className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
+                  settings.soundEnabled
+                    ? 'bg-amber-500 text-stone-950'
+                    : 'bg-stone-800 text-stone-300'
+                }`}
+              >
+                {settings.soundEnabled ? 'مفعّلة' : 'صامت'}
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>مستوى الصوت ({Math.round(localVolume * 100)}%)</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={localVolume}
+                onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                className="w-40 accent-amber-500 cursor-pointer"
+                aria-label="مستوى الصوت"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
-            <span>حجم خط الكلمات على البطاقات</span>
-            <div className="flex gap-1">
-              {(['normal', 'large', 'xlarge'] as const).map((scale) => (
+          {canEditSettings ? (
+            <>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <span>وضع تباين البروجكتر العالي</span>
                 <button
-                  key={scale}
                   type="button"
-                  onClick={() => onUpdateSettings({ fontScale: scale })}
-                  className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
-                    settings.fontScale === scale
+                  onClick={() =>
+                    onUpdateSettings({
+                      projectorHighContrast: !settings.projectorHighContrast,
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
+                    settings.projectorHighContrast
                       ? 'bg-amber-500 text-stone-950'
                       : 'bg-stone-800 text-stone-300'
                   }`}
                 >
-                  {scale === 'normal' ? 'عادي' : scale === 'large' ? 'كبير' : 'ضخم'}
+                  {settings.projectorHighContrast ? 'مفعّل' : 'عادي'}
                 </button>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
-            <span>لغة البطاقات</span>
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ languageMode: 'ar' })}
-                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
-                  settings.languageMode === 'ar'
-                    ? 'bg-amber-500 text-stone-950'
-                    : 'bg-stone-800 text-stone-300'
-                }`}
-              >
-                عربي فقط
-              </button>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ languageMode: 'ar_en' })}
-                className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
-                  settings.languageMode === 'ar_en'
-                    ? 'bg-amber-500 text-stone-950'
-                    : 'bg-stone-800 text-stone-300'
-                }`}
-              >
-                عربي / إنجليزي
-              </button>
-            </div>
-          </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <span>مؤثرات البث التلفزيوني (TV Motion Graphics)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateSettings({
+                      broadcastEffectsEnabled: !settings.broadcastEffectsEnabled,
+                    })
+                  }
+                  className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
+                    settings.broadcastEffectsEnabled
+                      ? 'bg-amber-500 text-stone-950'
+                      : 'bg-stone-800 text-stone-300'
+                  }`}
+                >
+                  {settings.broadcastEffectsEnabled ? 'مفعّلة' : 'معطّلة'}
+                </button>
+              </div>
 
-          <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <span>مؤقت الدور</span>
-              <button
-                type="button"
-                onClick={() => onUpdateSettings({ timerEnabled: !settings.timerEnabled })}
-                className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
-                  settings.timerEnabled
-                    ? 'bg-amber-500 text-stone-950'
-                    : 'bg-stone-800 text-stone-300'
-                }`}
-              >
-                {settings.timerEnabled ? 'مفعّل' : 'معطّل'}
-              </button>
-            </div>
-            {settings.timerEnabled && (
-              <div className="flex items-center justify-between pt-1">
-                <span>مدة المؤقت (ثانية)</span>
-                <div className="flex gap-1 font-mono">
-                  {[60, 90, 120, 180].map((sec) => (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <span>حجم خط الكلمات على البطاقات</span>
+                <div className="flex gap-1">
+                  {(['normal', 'large', 'xlarge'] as const).map((scale) => (
                     <button
-                      key={sec}
+                      key={scale}
                       type="button"
-                      onClick={() => onUpdateSettings({ timerDurationSeconds: sec })}
+                      onClick={() => onUpdateSettings({ fontScale: scale })}
                       className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
-                        settings.timerDurationSeconds === sec
+                        settings.fontScale === scale
                           ? 'bg-amber-500 text-stone-950'
                           : 'bg-stone-800 text-stone-300'
                       }`}
                     >
-                      {sec}s
+                      {scale === 'normal' ? 'عادي' : scale === 'large' ? 'كبير' : 'ضخم'}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
-            <span>المؤثرات الصوتية</span>
-            <button
-              type="button"
-              onClick={() => onUpdateSettings({ soundEnabled: !settings.soundEnabled })}
-              className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
-                settings.soundEnabled
-                  ? 'bg-amber-500 text-stone-950'
-                  : 'bg-stone-800 text-stone-300'
-              }`}
-            >
-              {settings.soundEnabled ? 'مفعّلة' : 'صامت'}
-            </button>
-          </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <span>لغة البطاقات</span>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSettings({ languageMode: 'ar' })}
+                    className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                      settings.languageMode === 'ar'
+                        ? 'bg-amber-500 text-stone-950'
+                        : 'bg-stone-800 text-stone-300'
+                    }`}
+                  >
+                    عربي فقط
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSettings({ languageMode: 'ar_en' })}
+                    className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                      settings.languageMode === 'ar_en'
+                        ? 'bg-amber-500 text-stone-950'
+                        : 'bg-stone-800 text-stone-300'
+                    }`}
+                  >
+                    عربي / إنجليزي
+                  </button>
+                </div>
+              </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
-            <span>قاعدة التخمين الإضافي (+1)</span>
-            <button
-              type="button"
-              onClick={() => onUpdateSettings({ plusOneRule: !settings.plusOneRule })}
-              className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
-                settings.plusOneRule
-                  ? 'bg-amber-500 text-stone-950'
-                  : 'bg-stone-800 text-stone-300'
-              }`}
-            >
-              {settings.plusOneRule ? 'مفعّلة (+1)' : 'معطّلة'}
-            </button>
-          </div>
+              <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>مؤقت الدور</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUpdateSettings({ timerEnabled: !settings.timerEnabled })
+                    }
+                    className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
+                      settings.timerEnabled
+                        ? 'bg-amber-500 text-stone-950'
+                        : 'bg-stone-800 text-stone-300'
+                    }`}
+                  >
+                    {settings.timerEnabled ? 'مفعّل' : 'معطّل'}
+                  </button>
+                </div>
+                {settings.timerEnabled && (
+                  <div className="flex items-center justify-between pt-1">
+                    <span>مدة المؤقت (ثانية)</span>
+                    <div className="flex gap-1 font-mono">
+                      {[60, 90, 120, 180].map((sec) => (
+                        <button
+                          key={sec}
+                          type="button"
+                          onClick={() =>
+                            onUpdateSettings({ timerDurationSeconds: sec })
+                          }
+                          className={`px-2.5 py-1 rounded-lg font-bold cursor-pointer ${
+                            settings.timerDurationSeconds === sec
+                              ? 'bg-amber-500 text-stone-950'
+                              : 'bg-stone-800 text-stone-300'
+                          }`}
+                        >
+                          {sec}s
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <span>قاعدة التخمين الإضافي (+1)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateSettings({ plusOneRule: !settings.plusOneRule })
+                  }
+                  className={`px-3 py-1 rounded-lg font-bold cursor-pointer ${
+                    settings.plusOneRule
+                      ? 'bg-amber-500 text-stone-950'
+                      : 'bg-stone-800 text-stone-300'
+                  }`}
+                >
+                  {settings.plusOneRule ? 'مفعّلة (+1)' : 'معطّلة'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-400 text-[11px]">
+              تعديل إعدادات المباراة متاح فقط من لوحة تحكم الحكم المعتمد.
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -574,6 +766,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
 interface StatusModalProps {
   gameState: ClientGameState;
+  canControlMatch: boolean;
   onResume: () => void;
   onNewRound: () => void;
   onUndo: () => void;
@@ -582,6 +775,7 @@ interface StatusModalProps {
 
 export const StatusModal: React.FC<StatusModalProps> = ({
   gameState,
+  canControlMatch,
   onResume,
   onNewRound,
   onUndo,
@@ -596,15 +790,19 @@ export const StatusModal: React.FC<StatusModalProps> = ({
     gameState.winner === 'red' ? gameState.redTeamName : gameState.blueTeamName;
   const loserName =
     gameState.loser === 'red' ? gameState.redTeamName : gameState.blueTeamName;
+  const modeMeta =
+    GAME_MODES_CATALOG[gameState.settings.gameMode] ||
+    GAME_MODES_CATALOG.classic;
+  const revealedTotal = gameState.cards.filter((c) => c.revealed).length;
 
   return (
     <div
       data-testid={isGameOver ? 'gameover-modal' : 'pause-modal'}
-      className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center p-4"
+      className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-lg bg-stone-900 border-2 border-amber-300/35 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5 relative overflow-hidden">
+      <div className="w-full max-w-xl bg-stone-900 border-2 border-amber-300/35 rounded-2xl p-6 sm:p-8 shadow-2xl text-center space-y-5 relative overflow-hidden my-auto">
         {isGameOver && (
           <div
             className={`h-2 w-full absolute top-0 inset-x-0 ${
@@ -623,10 +821,12 @@ export const StatusModal: React.FC<StatusModalProps> = ({
 
             <div className="space-y-1">
               <div className="text-xs font-mono text-amber-300 uppercase">
-                نهاية الجولة {gameState.roundNumber} · ELITE CLASH
+                نهاية الجولة #{gameState.roundNumber} · {modeMeta.nameAr}
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-                الفائز: {winnerName}
+                {gameState.settings.gameMode === 'cooperative' && gameState.winner === 'blue'
+                  ? 'انتهت المهمة التعاونية بالخسارة'
+                  : `الفائز: ${winnerName}`}
               </h2>
               {gameState.winReason && (
                 <p className="text-sm text-stone-300">
@@ -640,7 +840,8 @@ export const StatusModal: React.FC<StatusModalProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 pt-1">
+            {/* Post-Match Summary Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
               <div className="p-3 rounded-xl bg-stone-950 border border-stone-800">
                 <div className="text-[11px] text-stone-400">عدد الأدوار</div>
                 <div className="text-xl font-mono font-extrabold text-amber-300 tabular-nums">
@@ -648,11 +849,21 @@ export const StatusModal: React.FC<StatusModalProps> = ({
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-stone-950 border border-stone-800">
+                <div className="text-[11px] text-stone-400">البطاقات المكشوفة</div>
+                <div className="text-xl font-mono font-extrabold text-white tabular-nums">
+                  {revealedTotal} / {gameState.cards.length}
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-stone-950 border border-stone-800">
                 <div className="text-[11px] text-stone-400">البطاقات المتبقية</div>
-                <div className="text-base sm:text-lg font-mono font-extrabold tabular-nums flex items-center justify-center gap-2 mt-0.5">
+                <div className="text-sm font-mono font-extrabold tabular-nums flex items-center justify-center gap-1.5 mt-1">
                   <span className="text-red-400">أحمر {gameState.redRemaining}</span>
-                  <span className="text-stone-600">·</span>
-                  <span className="text-blue-400">أزرق {gameState.blueRemaining}</span>
+                  {gameState.settings.gameMode !== 'cooperative' && (
+                    <>
+                      <span className="text-stone-600">·</span>
+                      <span className="text-blue-400">أزرق {gameState.blueRemaining}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-stone-950 border border-stone-800">
@@ -663,16 +874,41 @@ export const StatusModal: React.FC<StatusModalProps> = ({
               </div>
             </div>
 
+            {/* Clue Timeline Summary */}
+            {gameState.clueHistory.length > 0 && (
+              <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 text-right space-y-1.5">
+                <div className="text-[11px] font-bold text-stone-400">
+                  ملخص التلميحات المعلنة في الجولة ({gameState.clueHistory.length}):
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {gameState.clueHistory.map((clue, idx) => (
+                    <span
+                      key={`${clue.word}-${idx}`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                        clue.team === 'red'
+                          ? 'bg-red-950/80 border-red-500/40 text-red-200'
+                          : 'bg-blue-950/80 border-blue-500/40 text-blue-200'
+                      }`}
+                    >
+                      {clue.word} ({clue.count === 'unlimited' ? '∞' : clue.count})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                data-start="true"
-                onClick={onNewRound}
-                className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-sm cursor-pointer"
-              >
-                بدء جولة جديدة (برمز جديد)
-              </button>
-              {gameState.canUndo && (
+              {canControlMatch && (
+                <button
+                  type="button"
+                  data-start="true"
+                  onClick={onNewRound}
+                  className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-sm cursor-pointer"
+                >
+                  بدء جولة جديدة (برمز جديد)
+                </button>
+              )}
+              {canControlMatch && gameState.canUndo && (
                 <button
                   type="button"
                   onClick={onUndo}
@@ -696,23 +932,27 @@ export const StatusModal: React.FC<StatusModalProps> = ({
               الجولة متوقفة مؤقتًا
             </h2>
             <p className="text-sm text-stone-300">
-              تم إيقاف المؤقت واللعب مؤقتًا. يمكنك استئناف اللعب أو بدء جولة جديدة.
+              تم إيقاف المؤقت واللعب مؤقتًا بواسطة الحكم.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onResume}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-sm cursor-pointer"
-              >
-                استئناف اللعب
-              </button>
-              <button
-                type="button"
-                onClick={onNewRound}
-                className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-sm cursor-pointer"
-              >
-                جولة جديدة
-              </button>
+              {canControlMatch && (
+                <button
+                  type="button"
+                  onClick={onResume}
+                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-extrabold text-sm cursor-pointer"
+                >
+                  استئناف اللعب
+                </button>
+              )}
+              {canControlMatch && (
+                <button
+                  type="button"
+                  onClick={onNewRound}
+                  className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-sm cursor-pointer"
+                >
+                  جولة جديدة
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onBackToTitle}

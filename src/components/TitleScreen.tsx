@@ -1,4 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { NashmiGuide } from './NashmiGuide';
+const PlayerAccount = lazy(() => import('./PlayerAccount'));
+class AccountBoundary extends React.Component<React.PropsWithChildren, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? <span className="cn-extra-error">الدخول غير متاح، العب كضيف</span> : this.props.children; }
+}
 import { GAME_MODES_CATALOG, GameMode } from '../game/rules';
 
 interface TitleScreenProps {
@@ -145,6 +152,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
           <span className="text-amber-300/90 font-mono" dir="ltr">CODE NAMES</span>
         </div>
 
+        <div className="cn-home-extras"><NashmiGuide/><AccountBoundary><Suspense fallback={<span className="cn-extra-error">حساب اختياري…</span>}><PlayerAccount/></Suspense></AccountBoundary></div>
         <div className="flex items-center gap-2 bg-stone-900/90 border border-amber-200/15 rounded-xl px-3 py-1.5">
           <label htmlFor="room-id-input" className="text-xs text-stone-400">
             رمز الغرفة:

@@ -986,6 +986,32 @@ async function startServer() {
   const app = express();
   app.use(express.json({ limit: '4mb' }));
 
+  // On-demand rules-only assistant; never forwards room state, PINs or secret cards.
+  let nashmiInFlight = 0, nashmiWindow = 0, nashmiRequests = 0;
+  app.post('/api/nashmi/rules', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const message = req.body?.message;
+    if (typeof message !== 'string' || !message.trim() || message.length > 400) return res.status(400).json({error:'Invalid question'});
+    const secret = process.env.NASHMI_SHARED_SECRET || '';
+    if (Buffer.byteLength(secret) < 32) return res.status(503).json({error:'Nashmi not configured'});
+    const now = Date.now();
+    if (now - nashmiWindow >= 60000) { nashmiWindow = now; nashmiRequests = 0; }
+    if (nashmiInFlight >= 1 || nashmiRequests >= 10) return res.status(429).json({error:'Nashmi busy'});
+    nashmiRequests++; nashmiInFlight++;
+    try {
+      const upstream = await fetch('https://three0s-guai.onrender.com/api/bot/platform', {
+        method:'POST', redirect:'error', headers:{'Content-Type':'application/json','X-Nashmi-Secret':secret},
+        body:JSON.stringify({game:'codenames',kind:'chat',message:message.trim(),systemInstruction:'أنت نشمي، مساعد أردني يشرح قواعد كود نيمز باختصار. اشرح القواعد العامة فقط، ولا تقترح تلميحات أو حلولًا لمباراة حية، ولا تطلب بيانات شخصية أو رموز الغرف. لا تعرف حالة اللوحة، ولا تدّعي معرفة نتيجة أو صلاحيات. عند اختلاف الأطوار وجّه اللاعب إلى الحكم والإعدادات.'}),
+        signal:AbortSignal.timeout(11500),
+      });
+      if (!upstream.ok) return res.status(502).json({error:'Nashmi unavailable'});
+      const data = await upstream.json() as {reply?:unknown};
+      if (typeof data.reply !== 'string' || !data.reply.trim()) return res.status(502).json({error:'Empty reply'});
+      return res.json({reply:data.reply.slice(0,2000),provider:'nashmi_gemini'});
+    } catch { return res.status(502).json({error:'Nashmi unavailable'}); }
+    finally { nashmiInFlight--; }
+  });
+
   // Helper to extract bearer token from header or query/body
   const extractToken = (req: express.Request): string | undefined => {
     const authHeader = req.headers.authorization;

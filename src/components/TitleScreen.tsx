@@ -38,7 +38,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   onRequestProtectedRole,
   onClaimOrganizer,
 }) => {
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [flippedPreview, setFlippedPreview] = useState<Record<number, boolean>>({});
   const [authModalRole, setAuthModalRole] = useState<
     'spymaster_red' | 'spymaster_blue' | 'referee' | null
@@ -52,8 +51,8 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (authModalRole) return;
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.repeat || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.target instanceof Element && e.target.closest('input, textarea, select, button, a, [contenteditable], [role="button"]')) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (document.activeElement instanceof HTMLElement) {
@@ -65,13 +64,6 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [authModalRole, onStartAudience]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width - 0.5;
-    const ny = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ x: nx * 10, y: -ny * 10 });
-  };
 
   const handleClaimOrganizerClick = async () => {
     setClaimingOrganizer(true);
@@ -133,12 +125,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
     GAME_MODES_CATALOG[activeMode] || GAME_MODES_CATALOG.classic;
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden tabletop-felt flex flex-col justify-between p-6 md:p-10 select-none">
+    <main dir="rtl" className="cn-home relative w-full min-h-dvh tabletop-felt flex flex-col justify-between p-4 sm:p-6 md:p-10 select-none">
       {/* Subtle geometric board frame lines */}
       <div className="pointer-events-none fixed inset-4 border border-amber-200/10 rounded-2xl" />
 
       {/* Top Tournament Identity Row */}
-      <div className="relative z-10 flex items-center justify-between gap-4">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3 text-amber-100/80 text-sm font-semibold">
           <svg className="w-6 h-6 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none">
             <path
@@ -148,9 +140,9 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
               fill="rgba(245, 158, 11, 0.15)"
             />
           </svg>
-          <span>دوري صراع النخبة — مسجد ابن تيمية</span>
+          <span>ساحة ألعاب يمكن هاي</span>
           <span aria-hidden="true">·</span>
-          <span className="text-amber-300/90 font-mono">ELITE CLASH</span>
+          <span className="text-amber-300/90 font-mono" dir="ltr">CODE NAMES</span>
         </div>
 
         <div className="flex items-center gap-2 bg-stone-900/90 border border-amber-200/15 rounded-xl px-3 py-1.5">
@@ -170,9 +162,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
 
       {/* Main stage: game logo and interactive preview */}
       <div
-        className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 max-w-7xl w-full mx-auto my-auto py-4"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+        className="cn-home-stage relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 items-center gap-6 lg:gap-10 max-w-7xl w-full mx-auto my-auto py-6"
       >
         {/* Game logo and actions */}
         <div className="lg:col-span-7 flex flex-col items-start text-right space-y-5">
@@ -184,9 +174,16 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             className="w-full max-w-xl h-auto drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
           />
 
-          <p className="text-stone-300 text-base md:text-lg max-w-xl leading-relaxed">
-            منصة المسابقات الذهنية المتكاملة لـ 6 أنماط لعب رسمية (الكلاسيكي، السريع 4×4، الناشئين بالرسوم، العائلي، التعاوني، ونظام البطولات) مع أكثر من 600 كلمة عربية محكمة في 8 حزم متخصصة.
-          </p>
+          <div className="cn-home-intro">
+            <span className="cn-kicker">تحدّي الكلمات والتلميحات</span>
+            <h1>كلمة واحدة… وراها سر!</h1>
+            <p>فريقان، تلميح واحد، وبطاقات لازم تكتشفوها قبل الفريق الثاني. انتبهوا من البطاقة السوداء.</p>
+          </div>
+          <div className="cn-how-grid" aria-label="طريقة اللعب">
+            <div><b>١</b><span>القائد يعطي تلميح</span></div>
+            <div><b>٢</b><span>الفريق يكشف الكلمات</span></div>
+            <div><b>٣</b><span>أول فريق يكمل أهدافه يفوز</span></div>
+          </div>
 
           {/* Active Game Mode Summary Pill */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-amber-200/90 bg-stone-900/85 border border-amber-300/20 rounded-xl px-3.5 py-2">
@@ -233,11 +230,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
         {/* Left Column: Interactive Centerpiece (Tactile 3x3 Tabletop Card Preview) */}
         <div className="lg:col-span-5 flex flex-col items-center justify-center">
           <div
-            style={{
-              transform: `perspective(900px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
-              transition: 'transform 140ms cubic-bezier(0.16, 1, 0.3, 1)',
-            }}
-            className="w-full max-w-md p-5 rounded-2xl bg-stone-900/90 border border-amber-200/20 shadow-2xl"
+            className="cn-preview w-full max-w-md p-4 sm:p-5 rounded-2xl bg-stone-900/90 border border-amber-200/20 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-3 text-xs text-stone-400">
               <span>معاينة تفاعلية للبطاقات الورقية (انقر لتجربة الكشف)</span>
@@ -290,7 +283,7 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
       </div>
 
       {/* Bottom Safe Margin: Single Flat Control-Hint Line */}
-      <div className="relative z-10 flex items-center justify-between text-xs text-stone-400 pt-2">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400 pt-2">
         <span>Enter أو Space لبدء شاشة العرض · F ملء الشاشة · P إيقاف مؤقت · M كتم الصوت</span>
         <span className="font-mono tabular-nums">600+ كلمة عربية محكمة · 6 أطوار لعب · حماية جلسات كاملة</span>
       </div>

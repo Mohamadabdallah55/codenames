@@ -23,6 +23,15 @@ import {
 import { soundFX } from './utils/sound';
 import { RoomActionPayload } from '../server';
 
+function TeamProgress({ total, remaining, team }: { total: number; remaining: number; team: TeamColor }) {
+  const safeTotal = Math.max(0, Math.min(25, total));
+  const completed = Math.max(0, Math.min(safeTotal, safeTotal - remaining));
+  return <div className={`cn-team-progress cn-team-progress-${team}`} role="progressbar" aria-label="البطاقات المكتشفة" aria-valuemin={0} aria-valuemax={safeTotal || 1} aria-valuenow={completed}>
+    <div className="cn-progress-dots" aria-hidden="true">{Array.from({ length: safeTotal }, (_, i) => <i key={i} data-done={i < completed} />)}</div>
+    <small>{completed}/{safeTotal}</small>
+  </div>;
+}
+
 const SESSION_STORAGE_KEY = 'elite_clash_codenames_session_v3';
 
 interface SavedSession {
@@ -481,6 +490,10 @@ export default function App() {
     [roomId, fetchRoomStateHttp]
   );
 
+  const handleAudienceCardReveal = useCallback((cardIndex: number) => {
+    void dispatchAction({ action: 'reveal_card', cardIndex });
+  }, [dispatchAction]);
+
   // Strict server-verified role authentication (no silent local fallback)
   const authenticateRole = useCallback(
     async (
@@ -721,10 +734,10 @@ export default function App() {
   };
 
   return (
-    <main className={`w-full overflow-hidden tabletop-felt flex flex-col justify-between select-none ${role === 'referee' ? 'h-dvh' : 'h-screen'}`}>
+    <main dir="rtl" className={`cn-game w-full overflow-hidden tabletop-felt flex flex-col justify-between select-none ${role === 'referee' ? 'h-dvh' : role === 'audience' ? 'cn-audience h-dvh' : 'h-dvh'}`}>
       {/* Unified Top Perimeter HUD Dock */}
       {role !== 'referee' && (
-        <div className="shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 sm:gap-3 z-20">
+        <div className="cn-hud shrink-0 w-full bg-stone-950/95 border-b border-amber-200/15 px-3 py-2 sm:px-5 sm:py-2 flex flex-wrap xl:flex-nowrap items-center justify-between gap-2 sm:gap-3 z-20">
           {/* Right Zone: Red & Blue Team Score Counters (or Cooperative Target Counter) */}
           <div className="flex items-center gap-2 shrink-0">
             <div
@@ -753,6 +766,7 @@ export default function App() {
               >
                 {gameState.redRemaining}
               </span>
+              <TeamProgress total={gameState.redTotal} remaining={gameState.redRemaining} team="red" />
             </div>
 
             {isCooperative ? (
@@ -798,6 +812,7 @@ export default function App() {
                 >
                   {gameState.blueRemaining}
                 </span>
+                <TeamProgress total={gameState.blueTotal} remaining={gameState.blueRemaining} team="blue" />
               </div>
             )}
           </div>
@@ -868,7 +883,7 @@ export default function App() {
             ) : (
               <span
                 data-testid="waiting-clue-label"
-                className="hidden xl:inline-block text-xs text-stone-400"
+                className="text-xs text-stone-400 cn-waiting-clue"
               >
                 بانتظار إعلان التلميح من القائد أو اختيار البطاقات
               </span>
@@ -1061,9 +1076,7 @@ export default function App() {
                   (gameState.settings.allowAudienceClickInLocalMode || Boolean(sessionToken))
                 }
                 showSecretKeyOverlay={false}
-                onCardClick={(cardIndex) =>
-                  dispatchAction({ action: 'reveal_card', cardIndex })
-                }
+                onCardClick={handleAudienceCardReveal}
               />
             </div>
 

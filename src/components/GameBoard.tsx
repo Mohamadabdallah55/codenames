@@ -147,7 +147,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
         data-testid="codenames-board-grid"
         data-grid-size={cards.length}
         data-font-scale={settings.fontScale}
-        className={`w-full h-full grid ${
+        className={`cn-board w-full h-full grid ${
           is16Grid ? 'grid-cols-4 grid-rows-4' : 'grid-cols-5 grid-rows-5'
         } ${compact ? 'gap-1.5 sm:gap-2' : 'gap-2 sm:gap-3 lg:gap-3.5'}`}
       >
@@ -202,7 +202,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
                     })`
                   : ''
               }`}
-              className={`relative rounded-xl sm:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2.5 select-none transition-transform duration-150 overflow-hidden ${cardSurfaceClass} ${
+              className={`cn-board-card relative rounded-xl sm:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2.5 select-none transition-transform duration-150 overflow-hidden ${cardSurfaceClass} ${
                 !card.revealed && secretInfo ? secretInfo.borderClass : ''
               } ${isInteractive ? 'cursor-pointer' : 'cursor-default'} ${
                 card.revealed && showSecretKeyOverlay ? 'opacity-65' : ''
@@ -233,9 +233,7 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
 
                 {!card.revealed && !secretInfo && !compact && (
                   <div className="flex items-center gap-1.5 opacity-45">
-                    <span className="hidden md:inline-block text-[10px] font-bold text-stone-600 rotate-180 select-none">
-                      {card.wordAr}
-                    </span>
+                    <span className="hidden md:inline-block text-[10px] font-bold text-stone-600 select-none" aria-hidden="true">CODE</span>
                     <span className="w-2.5 h-2.5 rounded-full border border-stone-500/80 bg-stone-300/50 inline-block" />
                   </div>
                 )}
@@ -327,6 +325,8 @@ export const GameBoard: React.FC<GameBoardProps> = React.memo(
     prev.showSecretKeyOverlay === next.showSecretKeyOverlay &&
     prev.compact === next.compact &&
     prev.gameMode === next.gameMode &&
+    prev.settings.gameMode === next.settings.gameMode &&
+    (!next.canClickCards || prev.onCardClick === next.onCardClick) &&
     prev.settings.fontScale === next.settings.fontScale &&
     prev.settings.languageMode === next.settings.languageMode &&
     prev.settings.projectorHighContrast === next.settings.projectorHighContrast

@@ -1001,7 +1001,7 @@ async function startServer() {
     try {
       const upstream = await fetch('https://three0s-guai.onrender.com/api/bot/platform', {
         method:'POST', redirect:'error', headers:{'Content-Type':'application/json','X-Nashmi-Secret':secret},
-        body:JSON.stringify({game:'codenames',kind:'chat',message:message.trim(),systemInstruction:'أنت نشمي، مساعد أردني يشرح قواعد كود نيمز باختصار. اشرح القواعد العامة فقط، ولا تقترح تلميحات أو حلولًا لمباراة حية، ولا تطلب بيانات شخصية أو رموز الغرف. لا تعرف حالة اللوحة، ولا تدّعي معرفة نتيجة أو صلاحيات. عند اختلاف الأطوار وجّه اللاعب إلى الحكم والإعدادات.'}),
+        body:JSON.stringify({game:'codenames',kind:'chat',message:message.trim(),systemInstruction:'أنت يزن، مساعد أردني يشرح قواعد كود نيمز باختصار. اشرح القواعد العامة فقط، ولا تقترح تلميحات أو حلولًا لمباراة حية، ولا تطلب بيانات شخصية أو رموز الغرف. لا تعرف حالة اللوحة، ولا تدّعي معرفة نتيجة أو صلاحيات. عند اختلاف الأطوار وجّه اللاعب إلى الحكم والإعدادات.'}),
         signal:AbortSignal.timeout(11500),
       });
       if (!upstream.ok) return res.status(502).json({error:'Nashmi unavailable'});

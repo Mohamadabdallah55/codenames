@@ -368,7 +368,7 @@ export default function App() {
       if (!isMounted) return;
       try {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        const wsUrl = `${protocol}//${window.location.hostname === "codenames-static-preview-ny5c.onrender.com" ? "codenames-1-hpmp.onrender.com" : window.location.host}/ws`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
